@@ -2,7 +2,7 @@
 // ICursorSigner 的 HMAC 实现，配置由 ConfigService 注入
 
 import { DomainError, PAGINATION_ERROR } from '@core/common/errors/domain-error';
-import type { ICursorSigner } from '@core/pagination/pagination.ports';
+import type { ICursorSigner } from '@core/pagination/pagination.contract';
 import type { CursorToken } from '@core/pagination/pagination.types';
 import { createHmac } from 'crypto';
 

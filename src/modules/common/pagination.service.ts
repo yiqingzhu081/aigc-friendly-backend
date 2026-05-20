@@ -7,13 +7,13 @@ import {
   enforceMaxPageSize,
   whitelistSorts,
 } from '@core/pagination/pagination.policy';
-import type { IPaginator } from '@core/pagination/pagination.ports';
+import type { IPaginator } from '@core/pagination/pagination.contract';
 import type {
   PaginatedResult,
   PaginationParams,
   SortParam,
 } from '@core/pagination/pagination.types';
-import { ensureTieBreaker, type ISortResolver } from '@core/sort/sort.ports';
+import { ensureTieBreaker, type ISortResolver } from '@core/sort/sort.contract';
 import { Inject, Injectable } from '@nestjs/common';
 import type { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 import { PAGINATION_TOKENS } from './tokens/pagination.tokens';

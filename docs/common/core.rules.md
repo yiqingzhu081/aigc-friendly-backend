@@ -71,8 +71,8 @@ For boundary contract naming, see docs/common/boundary-contract.rules.md.
 
 ## Legacy 兼容口径
 
-- 当前 `src/core/**` 中仍可能存在历史共享 contract / interface。
-  它们用于兼容现有装配和调用路径，不作为新增代码的 precedent。
+- 当前 `src/core/**` 中保留的共享 contract / interface 必须使用 `*.contract.ts`
+  或更具体的纯类型 / helper 命名。
 - Legacy contract 只能做必要维护，不得继续扩大职责、增加新的反向依赖或作为新 contract 的放置模板。
 - 新增 core-owned boundary contract 使用 `*.contract.ts`，不得使用 `*.port.ts`
   / `*.ports.ts` 命名。

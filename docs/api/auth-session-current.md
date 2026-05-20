@@ -85,6 +85,8 @@ Resolver、Guard、Usecase 不应各自手写不同的 session shape。
 - 前端运行时稳定依赖 `errors[].extensions.code === 'UNAUTHENTICATED'` 判断会话不可用。
 - `extensions.errorCode` 只作为调试、测试、观测、兼容或可选展示字段。
 - HTTP `401` 只作为 transport 层兜底，GraphQL 可以 HTTP `200` 携带 `errors`。
+- GraphQL adapter 层的 `JwtStrategy` 只负责协议认证接入；账号存在性等 session 读校验通过
+  `ValidateAccessTokenSessionUsecase` 上提到 usecase 层。
 
 ## 禁止项
 

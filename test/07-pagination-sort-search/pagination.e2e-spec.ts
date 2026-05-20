@@ -6,7 +6,7 @@ import {
   VerificationRecordType,
 } from '@app-types/models/verification-record.types';
 import { DomainError, PAGINATION_ERROR } from '@core/common/errors/domain-error';
-import type { ICursorSigner } from '@core/pagination/pagination.ports';
+import type { ICursorSigner } from '@core/pagination/pagination.contract';
 import type { SortParam } from '@core/pagination/pagination.types';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';

@@ -44,8 +44,9 @@ Source of truth: This file defines boundary contract naming and shared vocabular
 
 ## 当前 Legacy 兼容口径
 
-当前项目仍存在历史 `*.ports.ts` 文件和 TypeORM `EntityManager` transaction alias。
+当前项目仍存在历史 TypeORM `EntityManager` transaction alias。
 它们只允许必要维护，不作为新增代码模板。
+历史 core `*.ports.ts` 已迁移为 `*.contract.ts`，不得重新引入。
 
 新增或重构 touched code 时：
 

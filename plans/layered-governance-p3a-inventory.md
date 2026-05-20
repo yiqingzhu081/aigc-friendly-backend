@@ -34,12 +34,10 @@ P3b 应按本 inventory 分批修复。
 - infrastructure 未发现依赖 modules 实现。
 - usecases 未发现跨 bounded context usecase import。
 
-真实分层债务集中在：
+真实分层债务当前集中在：
 
 - transaction boundary legacy。
-- business modules 跨域依赖。
-- QueryService 依赖混合读写 service 或跨域 entity。
-- legacy `*.ports.ts` 命名。
+- `verification-read.service` 命名造成 QueryService 扫描噪声，但当前实现是同域只读服务。
 
 P3b 已处理：
 
@@ -51,6 +49,8 @@ P3b 已处理：
   或 `AccountTransactionManager`，读侧已改为同域 repository 实现。
 - `ThirdPartyAuthEntity` 已从 `account/base/entities` 迁回 `third-party-auth` 模块，
   并移除对 `AccountEntity` 的 ORM relation，保留 `accountId` 字段契约。
+- 无调用点的 `src/modules/auth/queries/permission.query.service.ts` 已删除。
+- core legacy `.ports.ts` 已迁移为 `.contract.ts`，ESLint legacy 白名单已移除。
 
 ## P1 级问题：应优先修复
 
@@ -95,6 +95,8 @@ P3b 已处理：
 
 ### 2. Business modules 存在跨域依赖
 
+状态：P3b 第七批已修复生产代码中的 business -> business modules 依赖。
+
 规则：
 
 - `docs/common/modules.rules.md`
@@ -103,10 +105,10 @@ P3b 已处理：
 扫描命令：
 
 ```bash
-rg -n "from ['\"](@src/modules/|@modules/|src/modules/)" src/modules -g '*.ts'
+rg -n "from ['\"](@src/modules/|@modules/|src/modules/)" src/modules -g '*.ts' -g '!*.spec.ts'
 ```
 
-代表性问题：
+原代表性问题：
 
 - `src/modules/auth/auth.module.ts` 依赖 `AccountInstallerModule`。
 - `src/modules/auth/strategies/jwt.strategy.ts` 依赖 `AccountService`。
@@ -119,7 +121,16 @@ rg -n "from ['\"](@src/modules/|@modules/|src/modules/)" src/modules -g '*.ts'
 - business modules 依赖 `src/modules/common/*` 属于允许方向。
 - `src/modules/third-party-auth/*` 对 account entity 的依赖已在 P3b 第四批修复。
 
-建议修复：
+修复：
+
+- `JwtStrategy` 已迁移到 `src/adapters/api/graphql/strategies/jwt.strategy.ts`。
+- 账号存在性校验已提升到 `ValidateAccessTokenSessionUsecase`，adapter strategy 通过 usecase 调用。
+- `AuthModule` 不再导入 `AccountInstallerModule`。
+- 空壳 `RegisterModule` 已删除。
+- `VerificationRecordModule` 已移除未使用的 `AccountInstallerModule` / `PasswordModule` imports。
+- 生产代码扫描只剩 business -> `modules/common` 的允许依赖。
+
+后续注意：
 
 - 跨域读取上提到 usecase。
 - 需要稳定读模型时，由被读域提供 QueryService / stable View。
@@ -144,7 +155,8 @@ rg -n "from ['\"].*(\\.service|/services/|@modules/|@src/modules/)" src/modules 
   - 状态：P3b 第三批已修复。
   - 原问题：依赖混合读写 `AccountService` 与 `AccountTransactionManager`。
 - `src/modules/auth/queries/permission.query.service.ts`
-  - 依赖 `AccountService`
+  - 状态：P3b 第五批已删除。
+  - 原问题：无调用点，且依赖混合读写 `AccountService`。
 - `src/modules/third-party-auth/queries/third-party-auth.query.service.ts`
   - 状态：P3b 第四批已修复。
   - 原问题：依赖 account 内部 entity。
@@ -217,12 +229,14 @@ rg -n "@(ObjectType|Field|InputType|ArgsType|InterfaceType)|@ApiProperty|@nestjs
 
 ### 1. Core legacy `*.ports.ts`
 
+状态：P3b 第六批已修复。
+
 规则：
 
 - `docs/common/boundary-contract.rules.md`
 - `docs/common/core.rules.md`
 
-现状：
+原现状：
 
 - `src/core/pagination/pagination.ports.ts`
 - `src/core/search/search.ports.ts`
@@ -237,11 +251,11 @@ rg -n "@(ObjectType|Field|InputType|ArgsType|InterfaceType)|@ApiProperty|@nestjs
 - `src/modules/common/pagination.service.ts`
 - `src/modules/common/search.module.ts`
 
-建议修复：
+修复：
 
-- 若仍是 core-owned boundary contract，迁移为 `*.contract.ts`。
-- 若只是算法/类型，改为 `*.types.ts` 或纯 helper。
-- 修复后移除 ESLint legacy allowlist。
+- 已迁移为 `pagination.contract.ts`、`search.contract.ts`、`sort.contract.ts`。
+- 所有 imports 已切换到 `*.contract`。
+- `eslint.config.mjs` 已移除 legacy core ports allowlist。
 
 ### 2. `lint:usecase-normalize-guard` 既有失败
 
@@ -327,8 +341,7 @@ P2 ESLint 已覆盖。
    处理 auth / register / third-party-auth / verification-record 对 account 或其他业务模块的直接依赖。
 5. `transaction boundary`：
    引入目标 transaction context / runner 后，分 account、verification、async-task-record 三批迁移。
-6. `legacy core ports`：
-   在依赖面稳定后迁移 `*.ports.ts` 命名。
+6. `legacy core ports`：已完成。
 
 ## 验证
 

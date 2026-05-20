@@ -311,17 +311,35 @@ P0 决策闸口：
   - `ThirdPartyAuthEntity` 移除对 `AccountEntity` 的 ORM relation，只保留 `accountId`
     字段契约；表名、字段、索引和迁移语义不变。
   - third-party-auth module / service / QueryService 不再依赖 account 内部 entity。
+- 第五批已完成：
+  - 删除无调用点的 `src/modules/auth/queries/permission.query.service.ts`。
+  - `AuthModule` 不再注册或导出该 QueryService，移除 QueryService -> mixed `AccountService`
+    的无效依赖。
+- 第六批已完成：
+  - `src/core/pagination/search/sort` 下 legacy `*.ports.ts` 已迁移为 `*.contract.ts`。
+  - 所有 imports 已切换到 `pagination.contract`、`search.contract`、`sort.contract`。
+  - `eslint.config.mjs` 移除 legacy core ports allowlist。
+- 第七批已完成：
+  - `JwtStrategy` 从 `modules/auth` 迁移到 `adapters/api/graphql/strategies`。
+  - 新增 `ValidateAccessTokenSessionUsecase`，保留 protected session 的 access token 类型校验
+    与账号存在性校验。
+  - `AuthModule` 不再导入 `AccountInstallerModule`，只保留 auth 模块自身 provider。
+  - 删除空壳 `RegisterModule`，注册依赖由 `RegistrationUsecasesModule` 显式装配。
+  - `VerificationRecordModule` 移除未使用的 account/password module imports。
 
 验证：
 
 - types -> core 扫描无匹配。
 - ORM Entity adapter decorator 扫描无匹配。
 - QueryService mixed service 扫描不再包含 `async-task-record.query.service.ts` 与
-  `account.query.service.ts`。
+  `account.query.service.ts`，且 `permission.query.service.ts` 已删除。
 - third-party-auth entity 搜索仅命中 `src/modules/third-party-auth/**` 与测试引用。
+- boundary port 扫描不再命中 core legacy `.ports.ts` 文件或 imports。
+- business modules 跨域扫描排除 `.spec.ts` 后只剩 business -> `modules/common` 的允许依赖。
 - `npm run typecheck` 通过。
 - `npx eslint "{src,apps,libs,test}/**/*.ts" --cache --cache-location .eslintcache` 通过。
 - `npm run test:e2e:file -- 01-auth/auth.e2e-spec.ts` 通过。
+- `npm run test:e2e:file -- 07-pagination-sort-search/pagination.e2e-spec.ts` 通过。
 - `npm run migration:drill:empty-db` 已尝试；当前 E2E DB 用户缺少 `CREATE/DROP DATABASE`
   权限，脚本要求授予权限或设置 `MIGRATION_DRILL_DATABASE` 指向预置空库后再验证。
 

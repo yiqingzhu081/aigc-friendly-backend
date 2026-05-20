@@ -25,16 +25,6 @@ const TRANSACTION_MANAGER_ORM_METHODS = new Set([
   'update',
 ]);
 
-const LEGACY_BOUNDARY_PORT_FILES = new Set([
-  path.join(CORE_ROOT, 'pagination', 'pagination.ports.ts'),
-  path.join(CORE_ROOT, 'search', 'search.ports.ts'),
-  path.join(CORE_ROOT, 'sort', 'sort.ports.ts'),
-]);
-const LEGACY_BOUNDARY_PORT_SPECIFIERS = new Set([
-  '@core/pagination/pagination.ports',
-  '@core/search/search.ports',
-  '@core/sort/sort.ports',
-]);
 const LEGACY_TRANSACTION_MANAGER_ALIASES = new Set([
   `${path.join(MODULES_ROOT, 'account', 'base', 'services', 'account.service.ts')}#AccountTransactionManager`,
   `${path.join(MODULES_ROOT, 'verification-record', 'verification-record.service.ts')}#VerificationRecordTransactionManager`,
@@ -123,7 +113,6 @@ const localArchitecturePlugin = {
       meta: { type: 'problem', schema: [] },
       create(context) {
         function reportPortImportIfNeeded(node, specifier) {
-          if (LEGACY_BOUNDARY_PORT_SPECIFIERS.has(specifier)) return;
           if (specifier.includes('transaction-runner.port')) {
             context.report({
               node,
@@ -143,7 +132,6 @@ const localArchitecturePlugin = {
           Program(node) {
             if (!isPathInside(context.filename, SRC_ROOT)) return;
             if (!/\.ports?\.ts$/.test(context.filename)) return;
-            if (LEGACY_BOUNDARY_PORT_FILES.has(context.filename)) return;
             context.report({
               node,
               message:

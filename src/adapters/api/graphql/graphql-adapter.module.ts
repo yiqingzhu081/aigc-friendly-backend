@@ -11,6 +11,7 @@ import { VerificationRecordUsecasesModule } from '@src/usecases/verification-rec
 import { VerificationUsecasesModule } from '@src/usecases/verification/verification-usecases.module';
 
 import { Module } from '@nestjs/common';
+import { PassportModule } from '@nestjs/passport';
 
 // Resolvers
 import { AccountResolver } from './account/account.resolver';
@@ -26,6 +27,7 @@ import { VerificationRecordResolver } from './verification-record/verification-r
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { QmWorkerEntryGuard } from './guards/qm-worker-entry.guard';
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 /**
  * GraphQL 适配器模块
@@ -43,6 +45,7 @@ import { QmWorkerEntryGuard } from './guards/qm-worker-entry.guard';
     ThirdPartyAccountsUsecasesModule,
     VerificationRecordUsecasesModule,
     VerificationUsecasesModule,
+    PassportModule.register({ defaultStrategy: 'jwt' }),
   ],
   providers: [
     // Resolvers
@@ -58,6 +61,7 @@ import { QmWorkerEntryGuard } from './guards/qm-worker-entry.guard';
     QmWorkerEntryGuard,
     JwtAuthGuard,
     RolesGuard,
+    JwtStrategy,
   ],
   exports: [
     // Resolvers
@@ -72,6 +76,7 @@ import { QmWorkerEntryGuard } from './guards/qm-worker-entry.guard';
     QmWorkerEntryGuard,
     JwtAuthGuard,
     RolesGuard,
+    JwtStrategy,
   ],
 })
 export class GraphQLAdapterModule {}

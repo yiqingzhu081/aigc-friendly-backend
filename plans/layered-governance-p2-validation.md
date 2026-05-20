@@ -13,9 +13,6 @@ P2 已完成，日期：2026-05-21。
 
 - 参考新项目 `localArchitecturePlugin`，旧项目已迁入可安全落地的 local architecture ESLint 规则。
 - 已知 legacy 做精确白名单，保证 P2 不把 P3 迁移债务提前变成阻塞：
-  - `src/core/pagination/pagination.ports.ts`
-  - `src/core/search/search.ports.ts`
-  - `src/core/sort/sort.ports.ts`
   - `AccountTransactionManager`
   - `VerificationRecordTransactionManager`
   - `AsyncTaskRecordTransactionManager`
@@ -67,23 +64,26 @@ P3b 第一批已处理：
 rg -n "type\\s+\\w*TransactionManager\\s*=|interface\\s+\\w*TransactionManager|TransactionPort|UnitOfWork|\\.ports?\\.ts|from ['\"].*\\.ports?|transaction-runner\\.port" src -g '*.ts'
 ```
 
-结果：
+P3b 已处理：
 
-- legacy core `.ports.ts`：
-  - `src/core/pagination/pagination.ports.ts`
-  - `src/core/search/search.ports.ts`
-  - `src/core/sort/sort.ports.ts`
+- legacy core `.ports.ts` 已迁移为：
+  - `src/core/pagination/pagination.contract.ts`
+  - `src/core/search/search.contract.ts`
+  - `src/core/sort/sort.contract.ts`
+- `local-architecture/no-boundary-port-naming-drift` 已移除 legacy core ports 白名单。
+
+剩余结果：
+
 - legacy transaction alias：
   - `AccountTransactionManager`
   - `VerificationRecordTransactionManager`
   - `AsyncTaskRecordTransactionManager`
-- 多处现有代码仍 import legacy core `.ports.ts`。
 
 处理：
 
-- 当前白名单只允许这些既有 legacy。
-- 新增同类文件、import 或 alias 会被 ESLint 拦截。
-- P3a/P3b 再决定是否迁移为 `*.contract.ts` 和 transaction context。
+- 当前白名单只允许这些既有 transaction alias。
+- 新增 `*.port.ts` / `*.ports.ts` 文件、import 或 transaction alias 会被 ESLint 拦截。
+- P3a/P3b 再决定是否迁移 transaction context。
 
 ### Cross-Domain Modules
 
@@ -93,18 +93,14 @@ rg -n "type\\s+\\w*TransactionManager\\s*=|interface\\s+\\w*TransactionManager|T
 rg -n "from ['\"](@src/modules/|@modules/|src/modules/)" src/modules -g '*.ts'
 ```
 
-当前代表性结果：
+P3b 第七批后生产代码结果：
 
-- `auth` 依赖 `account`
-- `register` 依赖 `account` / `third-party-auth`
-- `third-party-auth` 依赖 `account` entity
-- `verification-record` 依赖 `account`
 - `account` / `verification-record` 依赖 `modules/common`
 
 处理：
 
 - `business -> common` 可接受。
-- `business -> business` 和 `common -> business` 进入 P3a inventory。
+- 生产代码中的 `business -> business` 依赖已在 P3b 第七批收口。
 - 不在 P2 中直接开启 `no-cross-domain-modules-imports`，否则当前主干会被既有问题阻塞。
 
 ### Entity Purity
@@ -135,7 +131,6 @@ rg -n "from ['\"].*(\\.service|/services/|@modules/|@src/modules/)" src/modules 
 
 当前代表性结果：
 
-- `permission.query.service.ts` 依赖 `AccountService`
 - `verification-record.query.service.ts` / `consumable.query.service.ts` 依赖 `verification-read.service`
 
 处理：
@@ -148,6 +143,8 @@ rg -n "from ['\"].*(\\.service|/services/|@modules/|@src/modules/)" src/modules 
   `AccountService` / `AccountTransactionManager`。
 - P3b 第四批已将 `ThirdPartyAuthEntity` 迁回 `third-party-auth` 模块，并移除对 account entity
   的 ORM relation。
+- P3b 第五批已删除无调用点的 `permission.query.service.ts`，不再保留 auth QueryService
+  对 `AccountService` 的 mixed service 依赖。
 - P3b 复核确认 `verification-read.service` 当前无写入、无事务入口，属于同域 read implementation；
   后续可作为命名或扫描降噪处理。
 

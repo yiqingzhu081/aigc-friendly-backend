@@ -1,7 +1,7 @@
 // src/infrastructure/typeorm/sort/typeorm-sort.ts
 import { DomainError, PAGINATION_ERROR } from '@core/common/errors/domain-error';
 import type { SortDirection, SortParam } from '@core/pagination/pagination.types';
-import type { ISortResolver } from '@core/sort/sort.ports';
+import type { ISortResolver } from '@core/sort/sort.contract';
 
 /**
  * TypeORM 排序解析器实现

@@ -35,7 +35,7 @@ performs an automatic `--fix` pass.
 - `local-architecture/no-boundary-port-naming-drift`
   Blocks new `*.port.ts` / `*.ports.ts` boundary files and imports.
   Also blocks `TransactionPort` / `UnitOfWork` naming drift.
-  Current legacy core `pagination/search/sort` `.ports.ts` files are allowlisted until P3 migration.
+  There is no current file/import allowlist for this rule.
 
 - `local-architecture/no-transaction-manager-alias`
   Blocks new local `*TransactionManager` aliases/interfaces in usecases and modules.

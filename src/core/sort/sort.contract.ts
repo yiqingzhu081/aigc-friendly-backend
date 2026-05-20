@@ -1,4 +1,4 @@
-// src/core/sort/sort.ports.ts
+// src/core/sort/sort.contract.ts
 import type { SortDirection, SortParam } from '@core/pagination/pagination.types';
 
 /**
