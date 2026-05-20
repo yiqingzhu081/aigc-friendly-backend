@@ -52,4 +52,5 @@
 
 ## 当前计划
 
+- [layered-governance-alignment-plan.md](./layered-governance-alignment-plan.md)
 - [account-generic-identity-plan.md](./account-generic-identity-plan.md)
