@@ -59,8 +59,8 @@
 - 第一阶段保留 `IdentityTypeEnum` 名字，只缩小枚举值。
   避免在语义清理阶段叠加大范围命名迁移；后续稳定后再评估是否改名为 `RoleEnum` / `AccountRole`。
 - 第一阶段目标枚举值为 `ADMIN / STAFF / GUEST / REGISTRANT`。
-- 第一阶段不新增通用 staff profile 表。
-  `STAFF` 先只作为账号级角色；若需要 staff 资料管理，进入 P7。
+- 不新增通用 staff profile 表或 staff 管理 API。
+  `STAFF` 只作为账号级角色；本框架项目只要求最低限度支持 staff 注册与 staff 登录。
 - GraphQL contract 允许破坏性移除培训班接口。
   不为 `coach / customer / learner / manager` 提供兼容 alias。
 - 数据库只保证空库 create。
@@ -139,11 +139,11 @@
 
 第一阶段不保留培训班 identity management。
 
-若需要通用 staff 管理，应新建或收敛为：
+本阶段不建设 staff 管理模块。最低框架能力只要求：
 
-- `src/modules/account/identities/staff/*` 或更通用的 `src/modules/account/staff/*`
-- `src/usecases/account` 或 `src/usecases/identity-management/staff`
-- GraphQL contract 使用 `staff`，不使用 `coach / learner / customer / manager`
+- `type=STAFF` 可注册出 `STAFF` 账号。
+- `STAFF` 账号可通过通用登录流程拿到 `STAFF` session。
+- 不新增 `coach / learner / customer / manager` alias。
 
 ## 迁移策略
 
@@ -210,8 +210,8 @@
 
 - 运行时先停止创建培训班邀请类型。
 - 空库 migration 中不再创建培训班 invite enum。
-- 只有在 P7 明确补齐通用 staff 邀请能力后，才新增通用 `INVITE_STAFF` 或同类类型。
-- `base_verification_records.subject_type` 第一阶段只保留通用 `ACCOUNT`，是否新增 `STAFF` 取决于 P7。
+- 不新增通用 staff 邀请能力。
+- `base_verification_records.subject_type` 第一阶段只保留通用 `ACCOUNT`。
 - 不处理已有库中未消费的培训班 invite 历史行。
 
 ### Training 表 baseline
@@ -232,7 +232,7 @@
 
 - auth / registration / roles guard / user-info 先改为 `ADMIN / STAFF / GUEST / REGISTRANT`。
 - verification-record 测试先保留 email/password/magic-link 等通用类型，移除 invite coach/manager。
-- identity-management 测试整体下线或替换为通用 staff 管理测试。
+- identity-management 测试整体下线；本阶段不替换为 staff 管理测试。
 - worker 测试中涉及 `INVITE_MANAGER / INVITE_COACH` 的 email queue case 需要同步删除或改为通用验证。
 - pagination/search/sort 中 `learners` 相关 case 属于培训班语义，应下线或替换为通用 account/staff 查询。
 
@@ -242,7 +242,7 @@
 
 当前产出：
 
-- [account-generic-identity-p0-inventory.md](./account-generic-identity-p0-inventory.md)
+- P0 初扫清单已完成并并入本计划；临时 inventory 文档已删除，避免继续引用过期影响面。
 
 产出物：
 
@@ -472,6 +472,8 @@
   仅作为迁移期 fixture key，实际 role 映射到 `STAFF / GUEST`。
 - 已删除旧 identity-management、learner pagination、training invite verification 的 e2e；pagination/search/sort
   已改为通用 account 查询测试；worker email 测试已移除 coach/manager invite 邮件流。
+- staff 最低闭环已补齐：`type=STAFF` 注册会写入 `STAFF` role，并可直接通过通用登录流程返回
+  `role=STAFF`。
 - 已通过：
   - `npm run typecheck`
   - `npx eslint "{src,apps,libs,test}/**/*.ts" --cache --cache-location .eslintcache`
@@ -482,6 +484,7 @@
   - `npm run test:e2e:file -- 02-register/register.e2e-spec.ts`
   - `npm run test:e2e:file -- 05-verification-record/verification-record-invite.e2e-spec.ts`
   - `npm run test:e2e:file -- 05-verification-record/verification-record-types.e2e-spec.ts`
+  - `npm run test:e2e:file -- 02-register/register.e2e-spec.ts`，覆盖 staff 注册后登录。
   - `npm run test:e2e:file -- 07-pagination-sort-search/pagination.e2e-spec.ts`
   - `npm run test:e2e:file -- 07-pagination-sort-search/search.e2e-spec.ts`
   - `npm run test:e2e:file -- 07-pagination-sort-search/sort.e2e-spec.ts`
@@ -512,9 +515,12 @@
 - 空库 migration drill 不创建培训班表或培训班 enum。
 - 不要求旧数据库原地升级。
 
-### P7：通用 staff 能力补齐
+### P7：通用 staff 管理能力
 
-目标：若实际需要后台人员资料或管理能力，按通用 staff 语义补齐，而不是复用培训班 manager/coach。
+状态：不推进。
+
+原因：当前项目定位为框架项目，不需要 staff profile、staff list 或 staff 管理 API。
+本阶段只保留最低 staff 注册和 staff 登录能力。
 
 候选：
 
@@ -531,7 +537,7 @@
 ## 后续开放项
 
 - O0：是否需要 `SYSTEM` 这类机器主体角色。
-- O1：是否需要通用 staff profile 表和 staff 管理 API。若需要，进入 P7。
+- O1：通用 staff profile 表和 staff 管理 API 当前不推进；若未来产品侧确实需要，应另起计划。
 - O2：是否在角色契约稳定后将 `IdentityTypeEnum` 改名为 `RoleEnum` / `AccountRole`。
 
 ## 第一轮建议
@@ -544,6 +550,6 @@
 4. 做 P3，让 account base 脱离 training identity provider。
 5. 做 P4，把注册、验证、邀请和会话改成通用角色语义。
 6. 做 P5/P6，删除培训班 API、usecase、entity、migration、test 残留。
-7. 若确实需要 staff 管理，再做 P7。
+7. P7 当前不推进；框架最低能力只保留 staff 注册与 staff 登录。
 
 这条路线的关键约束是：只借鉴新项目的治理方式，不把新项目教育背景带入当前项目。

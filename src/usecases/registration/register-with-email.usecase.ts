@@ -11,6 +11,7 @@ import {
   RegisterWithEmailParams,
   RegisterWithEmailResult,
 } from '@app-types/models/registration.types';
+import { RegisterTypeEnum } from '@app-types/services/register.types';
 import { PinoLogger } from 'nestjs-pino';
 import {
   normalizeRegisterWithEmailInput,
@@ -43,6 +44,7 @@ export class RegisterWithEmailUsecase {
       loginEmail,
       loginPassword,
       nickname,
+      type = RegisterTypeEnum.REGISTRANT,
       inviteToken,
       clientIp,
       serverNetworkInterfaces,
@@ -72,6 +74,7 @@ export class RegisterWithEmailUsecase {
         loginEmail: normalizedLoginEmail,
         loginPassword,
         nickname: normalizedNickname,
+        type,
       });
 
       // 创建账户
@@ -136,12 +139,15 @@ export class RegisterWithEmailUsecase {
     loginEmail,
     loginPassword,
     nickname,
+    type,
   }: {
     loginName?: string | null;
     loginEmail: string;
     loginPassword: string;
     nickname?: string;
+    type: RegisterTypeEnum;
   }) {
+    const role = this.mapRegisterTypeToRole(type);
     const nicknameCandidates = normalizeRegistrationNicknameCandidatesInput({
       providedNickname: nickname,
       fallbackOptions: [loginName ?? undefined, loginEmail.split('@')[0]],
@@ -166,10 +172,19 @@ export class RegisterWithEmailUsecase {
       status: AccountStatus.PENDING,
       nickname: finalNickname,
       email: loginEmail,
-      accessGroup: [IdentityTypeEnum.REGISTRANT],
-      identityHint: IdentityTypeEnum.REGISTRANT,
-      metaDigest: [IdentityTypeEnum.REGISTRANT],
+      accessGroup: [role],
+      identityHint: role,
+      metaDigest: [role],
     };
+  }
+
+  private mapRegisterTypeToRole(type: RegisterTypeEnum): IdentityTypeEnum {
+    switch (type) {
+      case RegisterTypeEnum.STAFF:
+        return IdentityTypeEnum.STAFF;
+      case RegisterTypeEnum.REGISTRANT:
+        return IdentityTypeEnum.REGISTRANT;
+    }
   }
 
   /**
