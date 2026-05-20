@@ -7,11 +7,15 @@ import { CoachServiceModule } from '@src/modules/account/identities/training/coa
 import { CustomerServiceModule } from '@src/modules/account/identities/training/customer/customer-service.module';
 import { LearnerIdentityModule } from '@src/modules/account/identities/training/learner/learner.module';
 import { ManagerServiceModule } from '@src/modules/account/identities/training/manager/manager-service.module';
+import { CoachQueryService } from '@src/modules/account/queries/coach.query.service';
+import { CustomerQueryService } from '@src/modules/account/queries/customer.query.service';
+import { LearnerQueryService } from '@src/modules/account/queries/learner.query.service';
+import { ManagerQueryService } from '@src/modules/account/queries/manager.query.service';
 import { AuthModule } from '@src/modules/auth/auth.module';
 
 /**
- * 身份管理模块
- * 聚合身份相关服务模块
+ * Legacy training identity-management module.
+ * P5 will remove or replace these training-specific services.
  */
 @Module({
   imports: [
@@ -22,6 +26,18 @@ import { AuthModule } from '@src/modules/auth/auth.module';
     LearnerIdentityModule, // 提供 LearnerService
     ManagerServiceModule, // 提供 ManagerService
     AuthModule, // 提供认证相关服务
+  ],
+  providers: [CoachQueryService, CustomerQueryService, LearnerQueryService, ManagerQueryService],
+  exports: [
+    AccountInstallerModule,
+    CustomerServiceModule,
+    CoachServiceModule,
+    LearnerIdentityModule,
+    ManagerServiceModule,
+    CoachQueryService,
+    CustomerQueryService,
+    LearnerQueryService,
+    ManagerQueryService,
   ],
 })
 export class IdentityManagementModule {}

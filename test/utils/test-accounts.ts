@@ -10,7 +10,7 @@ import { CustomerEntity } from '@src/modules/account/identities/training/custome
 import { LearnerEntity } from '@src/modules/account/identities/training/learner/account-learner.entity';
 import { ManagerEntity } from '@src/modules/account/identities/training/manager/account-manager.entity';
 import { CreateAccountUsecase } from '@usecases/account/create-account.usecase';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityTarget, ObjectLiteral } from 'typeorm';
 
 export interface TestAccountConfig {
   loginName: string;
@@ -103,17 +103,30 @@ export const testAccountsConfig: Record<string, TestAccountConfig> = {
 
 /**
  * 清理所有与测试账号相关的数据
- * （按外键方向：先身份表 → user_info → account）
+ * （按外键方向：先已注册的 legacy 身份表 → user_info → account）
  */
 export const cleanupTestAccounts = async (dataSource: DataSource): Promise<void> => {
-  await dataSource.createQueryBuilder().delete().from(StaffEntity).execute();
-  await dataSource.createQueryBuilder().delete().from(LearnerEntity).execute();
-  await dataSource.createQueryBuilder().delete().from(CustomerEntity).execute();
-  await dataSource.createQueryBuilder().delete().from(ManagerEntity).execute();
-  await dataSource.createQueryBuilder().delete().from(CoachEntity).execute();
-  await dataSource.createQueryBuilder().delete().from(UserInfoEntity).execute();
-  await dataSource.createQueryBuilder().delete().from(AccountEntity).execute();
+  await deleteIfMetadataRegistered(dataSource, StaffEntity);
+  await deleteIfMetadataRegistered(dataSource, LearnerEntity);
+  await deleteIfMetadataRegistered(dataSource, CustomerEntity);
+  await deleteIfMetadataRegistered(dataSource, ManagerEntity);
+  await deleteIfMetadataRegistered(dataSource, CoachEntity);
+  await deleteIfMetadataRegistered(dataSource, UserInfoEntity);
+  await deleteIfMetadataRegistered(dataSource, AccountEntity);
 };
+
+const deleteIfMetadataRegistered = async <T extends ObjectLiteral>(
+  dataSource: DataSource,
+  target: EntityTarget<T>,
+): Promise<void> => {
+  if (!dataSource.hasMetadata(target)) return;
+  await dataSource.createQueryBuilder().delete().from(target).execute();
+};
+
+const hasEntityMetadata = <T extends ObjectLiteral>(
+  dataSource: DataSource,
+  target: EntityTarget<T>,
+): boolean => dataSource.hasMetadata(target);
 
 /**
  * 造数入口（优先用 Usecase；无 Usecase 时走 repo 回落）
@@ -210,6 +223,7 @@ const createStaffIdentity = async (
   cfg: TestAccountConfig,
   accountId: number,
 ): Promise<void> => {
+  if (!hasEntityMetadata(dataSource, StaffEntity)) return;
   const repo = dataSource.getRepository(StaffEntity);
   const exists = await repo.findOne({ where: { accountId } });
   if (!exists) {
@@ -237,6 +251,7 @@ const createManagerIdentity = async (
   cfg: TestAccountConfig,
   accountId: number,
 ): Promise<void> => {
+  if (!hasEntityMetadata(dataSource, ManagerEntity)) return;
   const repo = dataSource.getRepository(ManagerEntity);
   const exists = await repo.findOne({ where: { accountId } });
   if (!exists) {
@@ -261,6 +276,7 @@ const createCoachIdentity = async (
   cfg: TestAccountConfig,
   accountId: number,
 ): Promise<void> => {
+  if (!hasEntityMetadata(dataSource, CoachEntity)) return;
   const repo = dataSource.getRepository(CoachEntity);
   const exists = await repo.findOne({ where: { accountId } });
   if (!exists) {
@@ -289,6 +305,7 @@ const createCustomerIdentity = async (
   cfg: TestAccountConfig,
   accountId: number,
 ): Promise<void> => {
+  if (!hasEntityMetadata(dataSource, CustomerEntity)) return;
   const repo = dataSource.getRepository(CustomerEntity);
   const exists = await repo.findOne({ where: { accountId } });
   if (!exists) {
@@ -322,6 +339,12 @@ const createLearnerIdentity = async (params: {
   createdMap: Map<string, number>;
 }): Promise<void> => {
   const { dataSource, cfg, accountId, createAccountUsecase, createdMap } = params;
+  if (
+    !hasEntityMetadata(dataSource, LearnerEntity) ||
+    !hasEntityMetadata(dataSource, CustomerEntity)
+  ) {
+    return;
+  }
   const learnerRepo = dataSource.getRepository(LearnerEntity);
   const learnerExists = await learnerRepo.findOne({ where: { accountId } });
 

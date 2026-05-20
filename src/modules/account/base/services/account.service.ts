@@ -13,7 +13,7 @@ import { Gender, type GeographicInfo, UserState } from '@app-types/models/user-i
 import { ACCOUNT_ERROR, AUTH_ERROR, DomainError } from '@core/common/errors/domain-error';
 import { normalizeEmail } from '@core/common/normalize/normalize.helper';
 import { LegacyPasswordCryptoHelper } from '@modules/common/password/legacy-password-crypto.helper';
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 
@@ -22,18 +22,6 @@ import { AccountEntity } from '../entities/account.entity';
 import { UserInfoEntity } from '../entities/user-info.entity';
 
 import { AccountSecurityService } from './account-security.service';
-
-// ✅ 可插拔 provider 的聚合 Map（identity → provider）
-import { PROFILE_PROVIDER_MAP_TOKEN } from '../constants/provider-tokens';
-import type { AccountProfileProvider } from '../interfaces/account-profile-provider.interface';
-
-// ✅ 仅类型用途：不同 identity 对应的实体类型（不会引入运行时依赖）
-import type { StaffEntity } from '../../identities/school/staff/account-staff.entity';
-import type { StudentEntity } from '../../identities/school/student/account-student.entity';
-import type { CoachEntity } from '../../identities/training/coach/account-coach.entity';
-import type { CustomerEntity } from '../../identities/training/customer/account-customer.entity';
-import type { LearnerEntity } from '../../identities/training/learner/account-learner.entity';
-import type { ManagerEntity } from '../../identities/training/manager/account-manager.entity';
 
 export type AccountTransactionManager = EntityManager;
 
@@ -70,20 +58,6 @@ export interface UserInfoCreateData {
   updatedAt?: Date;
 }
 
-/**
- * 将身份常量映射到该身份的 Profile 实体类型
- * - 仅用于类型层面，让调用更安全（findStaffByAccountId 返回 StaffEntity | null 等）
- * - 不会影响运行时
- */
-type IdentityToEntity = {
-  STAFF: StaffEntity;
-  STUDENT: StudentEntity;
-  COACH: CoachEntity;
-  MANAGER: ManagerEntity;
-  CUSTOMER: CustomerEntity;
-  LEARNER: LearnerEntity;
-};
-
 @Injectable()
 export class AccountService {
   constructor(
@@ -93,33 +67,7 @@ export class AccountService {
     @InjectRepository(UserInfoEntity)
     private readonly userInfoRepository: Repository<UserInfoEntity>,
     private readonly accountSecurityService: AccountSecurityService,
-    @Inject(PROFILE_PROVIDER_MAP_TOKEN)
-    private readonly providerMap: Map<string, AccountProfileProvider<unknown>>,
   ) {}
-
-  // =========================================================
-  // 🔧 Provider 访问辅助（修复 TS2322 的关键）
-  // =========================================================
-
-  /**
-   * 从聚合 Map 中按身份取出 Provider，并在类型层面绑定到该身份对应的实体类型。
-   *
-   * 说明：
-   * - providerMap 的值是 AccountProfileProvider<unknown>
-   * - 我们需要把它“收窄”为 AccountProfileProvider<具体实体类型>
-   * - TypeScript 无法证明这点，只能使用“双重断言（unknown → 目标类型）”
-   * - 这是本设计中的“可信契约假设”：每个身份包注册的 provider 与该身份的实体匹配
-   */
-  private getProviderByIdentity<K extends keyof IdentityToEntity>(
-    identity: K,
-  ): AccountProfileProvider<IdentityToEntity[K]> | undefined {
-    const p = this.providerMap.get(identity as string);
-    // 双重断言解释：
-    //  1) 先把值当成 unknown（与实际 Map 中的 unknown 对齐）
-    //  2) 再断言成期望的具体类型 AccountProfileProvider<IdentityToEntity[K]>
-    // 这样可避免 TS2322（unknown → 泛型参数 T）报错
-    return p as unknown as AccountProfileProvider<IdentityToEntity[K]> | undefined;
-  }
 
   // =========================================================
   // 登录历史 & 账户/用户信息（原样保留）
@@ -432,52 +380,6 @@ export class AccountService {
       loginEmail: account.loginEmail || '',
       accessGroup,
     };
-  }
-
-  // =========================================================
-  // 🔁 身份相关查询（通过 Provider 分发）
-  // =========================================================
-
-  /** 根据账户 ID 查找员工（Staff）信息（未启用 staff 包时返回 null） */
-  async findStaffByAccountId(accountId: number): Promise<StaffEntity | null> {
-    const provider = this.getProviderByIdentity('STAFF');
-    if (!provider) return null;
-    return await provider.getProfile(accountId);
-  }
-
-  /** 根据账户 ID 查找教练（Coach）信息（未启用 coach 包时返回 null） */
-  async findCoachByAccountId(accountId: number): Promise<CoachEntity | null> {
-    const provider = this.getProviderByIdentity('COACH');
-    if (!provider) return null;
-    return await provider.getProfile(accountId);
-  }
-
-  /** 根据账户 ID 查找经理（Manager）信息（未启用 manager 包时返回 null） */
-  async findManagerByAccountId(accountId: number): Promise<ManagerEntity | null> {
-    const provider = this.getProviderByIdentity('MANAGER');
-    if (!provider) return null;
-    return await provider.getProfile(accountId);
-  }
-
-  /** 根据账户 ID 查找客户（Customer）信息（未启用 customer 包时返回 null） */
-  async findCustomerByAccountId(accountId: number): Promise<CustomerEntity | null> {
-    const provider = this.getProviderByIdentity('CUSTOMER');
-    if (!provider) return null;
-    return await provider.getProfile(accountId);
-  }
-
-  /** 根据账户 ID 查找学员（Learner）信息（未启用 learner 包时返回 null） */
-  async findLearnerByAccountId(accountId: number): Promise<LearnerEntity | null> {
-    const provider = this.getProviderByIdentity('LEARNER');
-    if (!provider) return null;
-    return await provider.getProfile(accountId);
-  }
-
-  /** 批量根据账户 ID 查找学员信息 */
-  async findLearnersByAccountIds(accountIds: number[]): Promise<Map<number, LearnerEntity>> {
-    const provider = this.getProviderByIdentity('LEARNER');
-    if (!provider || !provider.getProfiles) return new Map();
-    return await provider.getProfiles(accountIds);
   }
 
   // =========================================================

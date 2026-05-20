@@ -1,10 +1,5 @@
 // 文件位置：test/04-user-info/update-visible-user-info.e2e-spec.ts
-import {
-  AccountStatus,
-  AudienceTypeEnum,
-  IdentityTypeEnum,
-  LoginTypeEnum,
-} from '@app-types/models/account.types';
+import { AudienceTypeEnum, IdentityTypeEnum, LoginTypeEnum } from '@app-types/models/account.types';
 import { Gender, UserState } from '@app-types/models/user-info.types';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -14,9 +9,6 @@ import { initGraphQLSchema } from '../../src/adapters/api/graphql/schema/schema.
 import { ApiModule } from '../../src/bootstraps/api/api.module';
 import { AccountEntity } from '../../src/modules/account/base/entities/account.entity';
 import { UserInfoEntity } from '../../src/modules/account/base/entities/user-info.entity';
-import { AccountService } from '../../src/modules/account/base/services/account.service';
-import { CustomerEntity } from '../../src/modules/account/identities/training/customer/account-customer.entity';
-import { LearnerEntity } from '../../src/modules/account/identities/training/learner/account-learner.entity';
 import { getAccountIdByLoginName } from '../utils/e2e-graphql-utils';
 import { cleanupTestAccounts, seedTestAccounts, testAccountsConfig } from '../utils/test-accounts';
 
@@ -148,52 +140,42 @@ async function getAccountIdentityHint(
 }
 
 /**
- * 创建第二个 Customer 与其名下 Learner（用于跨归属权限测试）
+ * 创建第二个 GUEST 账号（用于跨账号权限测试）
  * - 保证 `user_info.metaDigest` 与 `accessGroup` 一致，避免安全检查暂停账号
  */
-async function ensureOtherCustomerAndLearner(ds: DataSource): Promise<{
-  otherCustomerAccountId: number;
-  otherLearnerAccountId: number;
-}> {
+async function ensureOtherGuestAccount(ds: DataSource): Promise<{ otherGuestAccountId: number }> {
   const accountRepo = ds.getRepository(AccountEntity);
   const userInfoRepo = ds.getRepository(UserInfoEntity);
-  const customerRepo = ds.getRepository(CustomerEntity);
-  const learnerRepo = ds.getRepository(LearnerEntity);
 
-  const custLogin = 'othercustomer';
-  const custEmail = 'othercustomer@example.com';
-  const custPass = 'OtherCustomer@2024';
+  const loginName = 'otherguest';
+  const loginEmail = 'otherguest@example.com';
 
   const existed: AccountEntity | null = await accountRepo.findOne({
-    where: { loginName: custLogin },
+    where: { loginName },
   });
-  let custAccount: AccountEntity;
+  let guestAccount: AccountEntity;
   if (existed) {
-    custAccount = existed;
+    guestAccount = existed;
   } else {
     const created = accountRepo.create({
-      loginName: custLogin,
-      loginEmail: custEmail,
+      loginName,
+      loginEmail,
       loginPassword: 'temp',
-      status: AccountStatus.ACTIVE,
       identityHint: IdentityTypeEnum.GUEST,
     });
     await accountRepo.save(created);
-    const saved = await accountRepo.findOne({ where: { loginName: custLogin } });
-    if (!saved) throw new Error('创建 othercustomer 账号失败');
-    custAccount = saved;
+    const saved = await accountRepo.findOne({ where: { loginName } });
+    if (!saved) throw new Error('创建 otherguest 账号失败');
+    guestAccount = saved;
   }
 
   if (!existed) {
-    const hashed = AccountService.hashPasswordWithTimestamp(custPass, custAccount.createdAt);
-    await accountRepo.update(custAccount.id, { loginPassword: hashed });
-
     await userInfoRepo.save(
       userInfoRepo.create({
-        accountId: custAccount.id,
-        nickname: `${custLogin}_nickname`,
+        accountId: guestAccount.id,
+        nickname: `${loginName}_nickname`,
         gender: Gender.SECRET,
-        email: custEmail,
+        email: loginEmail,
         accessGroup: [IdentityTypeEnum.GUEST],
         metaDigest: [IdentityTypeEnum.GUEST],
         notifyCount: 0,
@@ -201,82 +183,9 @@ async function ensureOtherCustomerAndLearner(ds: DataSource): Promise<{
         userState: UserState.ACTIVE,
       }),
     );
-
-    await customerRepo.save(
-      customerRepo.create({
-        accountId: custAccount.id,
-        name: `${custLogin}_customer_name`,
-        contactPhone: '13999990000',
-        preferredContactTime: 'ANY',
-        deactivatedAt: null,
-        remark: '测试 other customer',
-      }),
-    );
   }
 
-  const learnerLogin = 'otherlearner';
-  const learnerEmail = 'otherlearner@example.com';
-  const learnerPass = 'OtherLearner@2024';
-  const existedLearner: AccountEntity | null = await accountRepo.findOne({
-    where: { loginName: learnerLogin },
-  });
-  let learnerAccount: AccountEntity;
-  if (existedLearner) {
-    learnerAccount = existedLearner;
-  } else {
-    const createdL = accountRepo.create({
-      loginName: learnerLogin,
-      loginEmail: learnerEmail,
-      loginPassword: 'temp',
-      status: AccountStatus.ACTIVE,
-      identityHint: IdentityTypeEnum.GUEST,
-    });
-    await accountRepo.save(createdL);
-    const savedL = await accountRepo.findOne({ where: { loginName: learnerLogin } });
-    if (!savedL) throw new Error('创建 otherlearner 账号失败');
-    learnerAccount = savedL;
-  }
-
-  if (!existedLearner) {
-    const hashedL = AccountService.hashPasswordWithTimestamp(learnerPass, learnerAccount.createdAt);
-    await accountRepo.update(learnerAccount.id, { loginPassword: hashedL });
-
-    await userInfoRepo.save(
-      userInfoRepo.create({
-        accountId: learnerAccount.id,
-        nickname: `${learnerLogin}_nickname`,
-        gender: Gender.SECRET,
-        email: learnerEmail,
-        accessGroup: [IdentityTypeEnum.GUEST],
-        metaDigest: [IdentityTypeEnum.GUEST],
-        notifyCount: 0,
-        unreadCount: 0,
-        userState: UserState.ACTIVE,
-      }),
-    );
-
-    const otherCustomer = await customerRepo.findOne({ where: { accountId: custAccount.id } });
-    if (!otherCustomer) throw new Error('前置失败：未找到 other customer');
-
-    await learnerRepo.save(
-      learnerRepo.create({
-        accountId: learnerAccount.id,
-        customerId: otherCustomer.id,
-        name: `${learnerLogin}_learner_name`,
-        gender: Gender.SECRET,
-        birthDate: null,
-        avatarUrl: null,
-        specialNeeds: '测试 other learner',
-        countPerSession: 1,
-        deactivatedAt: null,
-        remark: '测试 other learner 身份',
-        createdBy: null,
-        updatedBy: null,
-      }),
-    );
-  }
-
-  return { otherCustomerAccountId: custAccount.id, otherLearnerAccountId: learnerAccount.id };
+  return { otherGuestAccountId: guestAccount.id };
 }
 
 describe('UpdateVisibleUserInfo (e2e)', () => {
@@ -296,9 +205,7 @@ describe('UpdateVisibleUserInfo (e2e)', () => {
   let customerAccountId: number;
   let learnerAccountId: number;
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let otherCustomerAccountId: number;
-  let otherLearnerAccountId: number;
+  let otherGuestAccountId: number;
 
   beforeAll(async () => {
     initGraphQLSchema();
@@ -358,9 +265,8 @@ describe('UpdateVisibleUserInfo (e2e)', () => {
       testAccountsConfig.learner.loginName,
     );
 
-    const created = await ensureOtherCustomerAndLearner(dataSource);
-    otherCustomerAccountId = created.otherCustomerAccountId;
-    otherLearnerAccountId = created.otherLearnerAccountId;
+    const created = await ensureOtherGuestAccount(dataSource);
+    otherGuestAccountId = created.otherGuestAccountId;
   });
 
   afterAll(async () => {
@@ -368,7 +274,7 @@ describe('UpdateVisibleUserInfo (e2e)', () => {
   });
 
   describe('正例', () => {
-    it('自己改自己（MANAGER）：只改 nickname', async () => {
+    it('自己改自己（STAFF）：只改 nickname', async () => {
       const newNickname = 'manager_nickname_new';
       const res = await updateUserInfo(app, managerToken, { nickname: newNickname });
       expect(res.body.errors).toBeUndefined();
@@ -386,7 +292,7 @@ describe('UpdateVisibleUserInfo (e2e)', () => {
       expect(updatedHint).toBe(IdentityTypeEnum.ADMIN);
     });
 
-    it('ADMIN 改任意人（Learner）：改 signature', async () => {
+    it('ADMIN 改任意 GUEST：改 signature', async () => {
       const res = await updateUserInfo(app, adminToken, {
         accountId: learnerAccountId,
         signature: '管理员设置',
@@ -396,8 +302,8 @@ describe('UpdateVisibleUserInfo (e2e)', () => {
       expect(res.body.data.updateUserInfo.userInfo.signature).toBe('管理员设置');
     });
 
-    it('CUSTOMER 改名下 learner：改 phone', async () => {
-      const res = await updateUserInfo(app, customerToken, {
+    it('STAFF 改 GUEST：改 phone', async () => {
+      const res = await updateUserInfo(app, managerToken, {
         accountId: learnerAccountId,
         phone: '13900001111',
       });
@@ -406,14 +312,16 @@ describe('UpdateVisibleUserInfo (e2e)', () => {
       expect(res.body.data.updateUserInfo.userInfo.phone).toBe('13900001111');
     });
 
-    it('COACH 改 CUSTOMER：改 address', async () => {
+    it('另一个 STAFF 改 GUEST：改 avatarUrl', async () => {
       const res = await updateUserInfo(app, coachToken, {
         accountId: customerAccountId,
-        address: '教练可更新客户地址',
+        avatarUrl: 'https://example.com/avatar.png',
       });
       expect(res.body.errors).toBeUndefined();
       expect(res.body.data.updateUserInfo.isUpdated).toBe(true);
-      expect(res.body.data.updateUserInfo.userInfo.address).toBe('教练可更新客户地址');
+      expect(res.body.data.updateUserInfo.userInfo.avatarUrl).toBe(
+        'https://example.com/avatar.png',
+      );
     });
 
     it('幂等：空 patch → isUpdated=false，不写库', async () => {
@@ -446,9 +354,6 @@ describe('UpdateVisibleUserInfo (e2e)', () => {
         accountId: customerAccountId,
         nickname: currentNickname,
       });
-      // 诊断输出：查看响应体
-
-      console.log('E2E_DBG response (same patch):', JSON.stringify(res.body));
       expect(res.body.errors).toBeUndefined();
       expect(res.body.data.updateUserInfo.isUpdated).toBe(false);
       expect(res.body.data.updateUserInfo.userInfo.nickname).toBe(currentNickname);
@@ -479,7 +384,7 @@ describe('UpdateVisibleUserInfo (e2e)', () => {
   });
 
   describe('负例', () => {
-    it('纯 LEARNER 改别人（CUSTOMER）→ 拒绝', async () => {
+    it('GUEST 改别人（GUEST）→ 拒绝', async () => {
       const res = await updateUserInfo(app, learnerToken, {
         accountId: customerAccountId,
         nickname: 'x',
@@ -508,9 +413,9 @@ describe('UpdateVisibleUserInfo (e2e)', () => {
       expect(code).toBe('OPERATION_NOT_SUPPORTED');
     });
 
-    it('CUSTOMER 改其它人的 learner → 拒绝', async () => {
+    it('GUEST 改其它 GUEST → 拒绝', async () => {
       const res = await updateUserInfo(app, customerToken, {
-        accountId: otherLearnerAccountId,
+        accountId: otherGuestAccountId,
         nickname: 'not-allowed',
       });
       expect(res.body.errors).toBeDefined();
@@ -518,8 +423,8 @@ describe('UpdateVisibleUserInfo (e2e)', () => {
       expect(code).toBe('ACCESS_DENIED');
     });
 
-    it('COACH 改 MANAGER → 拒绝', async () => {
-      const res = await updateUserInfo(app, coachToken, {
+    it('GUEST 改 STAFF → 拒绝', async () => {
+      const res = await updateUserInfo(app, customerToken, {
         accountId: managerAccountId,
         nickname: 'nope',
       });

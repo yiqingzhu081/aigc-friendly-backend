@@ -337,6 +337,31 @@
 
 ### P3：账号模块去培训班装配
 
+当前产出：
+
+- `AccountInstallerModule` 已改为 base-only 账号装配，不再通过 `AccountModule.forRoot()` 启用
+  `staff / student / coach / manager / customer / learner` 身份包。
+- `DEFAULT_IDENTITY_PRIORITY` 已改为通用账号角色优先级
+  `ADMIN / STAFF / GUEST / REGISTRANT`，不再包含 `training` / `school` audience priority。
+- `AccountModule` 不再导入 school/training identity module，不再聚合 profile provider map，
+  不再提供或导出 `CoachQueryService / CustomerQueryService / LearnerQueryService / ManagerQueryService`。
+- `AccountService` 已移除 profile provider map 依赖，以及
+  `findStaffByAccountId / findCoachByAccountId / findManagerByAccountId /
+  findCustomerByAccountId / findLearnerByAccountId / findLearnersByAccountIds` 查询方法。
+- legacy `IdentityManagementModule` 暂时承接旧培训身份服务和 training QueryService 的装配，等待 P5 删除或替换。
+- E2E fixture 工具已改为仅在对应 Entity metadata 注册时清理/创建 legacy profile，使 core auth / roles /
+  user-info 测试可在 base-only 账号模块下运行。
+- `update-visible-user-info` e2e 已删除旧 `coach / customer / manager / learner` 互改关系断言，改为
+  `ADMIN / STAFF / GUEST` 通用规则。
+- 已通过：
+  - `npm run typecheck`
+  - `npx eslint "{src,apps,libs,test}/**/*.ts" --cache --cache-location .eslintcache`
+  - `npm run test:e2e:file -- 03-roles-guard/roles-guard.e2e-spec.ts`
+  - `npm run test:e2e:file -- 01-auth/auth.e2e-spec.ts`
+  - `npm run test:e2e:file -- 01-auth/auth-identity.e2e-spec.ts`
+  - `npm run test:e2e:file -- 04-user-info/update-access-group.e2e-spec.ts`
+  - `npm run test:e2e:file -- 04-user-info/update-visible-user-info.e2e-spec.ts`
+
 目标：让 account base 不再运行时依赖培训班 identity provider。
 
 范围：

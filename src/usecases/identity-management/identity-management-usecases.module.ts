@@ -1,11 +1,7 @@
 // 文件位置： src/usecases/identity-management/identity-management-usecases.module.ts
 import { Module } from '@nestjs/common';
-import { AccountInstallerModule } from '@src/modules/account/account-installer.module';
-import { CoachServiceModule } from '@src/modules/account/identities/training/coach/coach-service.module';
-import { CustomerServiceModule } from '@src/modules/account/identities/training/customer/customer-service.module';
-import { LearnerIdentityModule } from '@src/modules/account/identities/training/learner/learner.module';
-import { ManagerServiceModule } from '@src/modules/account/identities/training/manager/manager-service.module';
 import { AuthModule } from '@src/modules/auth/auth.module';
+import { IdentityManagementModule } from '@src/modules/identity-management/identity-management.module';
 import { DeactivateCoachUsecase } from '@src/usecases/identity-management/coach/deactivate-coach.usecase';
 import { GetMyCoachUsecase } from '@src/usecases/identity-management/coach/get-my-coach.usecase';
 import { ListCoachesUsecase } from '@src/usecases/identity-management/coach/list-coaches.usecase';
@@ -30,14 +26,7 @@ import { ReactivateManagerUsecase } from '@src/usecases/identity-management/mana
 import { UpdateManagerUsecase } from '@src/usecases/identity-management/manager/update-manager.usecase';
 
 @Module({
-  imports: [
-    AccountInstallerModule,
-    CustomerServiceModule,
-    CoachServiceModule,
-    LearnerIdentityModule,
-    ManagerServiceModule,
-    AuthModule,
-  ],
+  imports: [IdentityManagementModule, AuthModule],
   providers: [
     UpgradeToCustomerUsecase,
     UpgradeToCoachUsecase,

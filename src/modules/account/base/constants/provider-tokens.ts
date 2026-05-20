@@ -1,16 +1,9 @@
 // src/modules/account/base/constants/provider-tokens.ts
 
 /**
- * 对外暴露的“聚合 Map” token
- * - AccountModule 会把各身份的 provider 聚合成 Map<identity, provider>
- * - 上层模块只需注入这个 Map 使用，避免依赖内部实现细节
- */
-export const PROFILE_PROVIDER_MAP_TOKEN = 'PROFILE_PROVIDER_MAP';
-
-/**
  * 为每个身份定义“唯一的 Provider token”
  * - 各身份模块用这里对应的 token 注册自己的 provider
- * - AccountModule.forRoot(...) 会按启用的身份动态注入这些 token，并聚合成 Map
+ * - legacy identity-management 仍保留这些 token，P5 删除培训身份包时一并清理
  * - 用 Symbol 避免命名冲突
  */
 export const PROFILE_PROVIDER_TOKEN = {

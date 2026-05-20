@@ -7,8 +7,7 @@ import { Module } from '@nestjs/common';
 
 @Module({
   imports: [
-    // ✅ 正确：使用 forRoot() 方法导入动态模块
-    AccountInstallerModule, // 使用默认配置：{ preset: 'custom', identities: [] }
+    AccountInstallerModule,
     ThirdPartyAuthModule,
     PasswordModule, // 导入 PasswordModule 以提供 PasswordPolicyService
   ],
