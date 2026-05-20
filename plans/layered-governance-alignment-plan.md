@@ -107,6 +107,10 @@
 
 ### P0：新旧治理差异清单
 
+当前产出：
+
+- [layered-governance-p0-inventory.md](./layered-governance-p0-inventory.md)
+
 目标：先准确知道旧项目和新项目在治理文档、规则入口、验证方式上的差距。
 
 产出物：
