@@ -160,8 +160,8 @@ describe('学员管理 E2E 测试 - 全面权限控制', () => {
       loginName: 'test_manager_comprehensive',
       loginEmail: 'manager_comprehensive@example.com',
       loginPassword: 'TestManager@2024',
-      identityType: IdentityTypeEnum.MANAGER,
-      accessGroup: [IdentityTypeEnum.MANAGER],
+      identityType: IdentityTypeEnum.STAFF,
+      accessGroup: [IdentityTypeEnum.STAFF],
     });
 
     const managerRepo = dataSource.getRepository(ManagerEntity);
@@ -182,8 +182,8 @@ describe('学员管理 E2E 测试 - 全面权限控制', () => {
       loginName: 'test_customer_a',
       loginEmail: 'customer_a@example.com',
       loginPassword: 'TestCustomerA@2024',
-      identityType: IdentityTypeEnum.CUSTOMER,
-      accessGroup: [IdentityTypeEnum.CUSTOMER],
+      identityType: IdentityTypeEnum.GUEST,
+      accessGroup: [IdentityTypeEnum.GUEST],
     });
 
     const customerRepo = dataSource.getRepository(CustomerEntity);
@@ -205,8 +205,8 @@ describe('学员管理 E2E 测试 - 全面权限控制', () => {
       loginName: 'test_customer_b',
       loginEmail: 'customer_b@example.com',
       loginPassword: 'TestCustomerB@2024',
-      identityType: IdentityTypeEnum.CUSTOMER,
-      accessGroup: [IdentityTypeEnum.CUSTOMER],
+      identityType: IdentityTypeEnum.GUEST,
+      accessGroup: [IdentityTypeEnum.GUEST],
     });
 
     customerBEntity = await customerRepo.save(

@@ -159,7 +159,7 @@ export class UpgradeToCoachUsecase {
     // 同步更新账户的身份提示为 COACH
     await this.accountService.updateAccount(
       accountId,
-      { identityHint: IdentityTypeEnum.COACH },
+      { identityHint: IdentityTypeEnum.STAFF },
       manager,
     );
 
@@ -203,8 +203,8 @@ export class UpgradeToCoachUsecase {
     const cleanedAccessGroup = userInfo.accessGroup.filter(
       (item) => item !== IdentityTypeEnum.REGISTRANT,
     );
-    if (!cleanedAccessGroup.includes(IdentityTypeEnum.COACH))
-      cleanedAccessGroup.push(IdentityTypeEnum.COACH);
+    if (!cleanedAccessGroup.includes(IdentityTypeEnum.STAFF))
+      cleanedAccessGroup.push(IdentityTypeEnum.STAFF);
 
     const needCleanup =
       cleanedAccessGroup.length !== userInfo.accessGroup.length ||
@@ -243,8 +243,8 @@ export class UpgradeToCoachUsecase {
     const updatedAccessGroup = userInfo.accessGroup.filter(
       (item) => item !== IdentityTypeEnum.REGISTRANT,
     );
-    if (!updatedAccessGroup.includes(IdentityTypeEnum.COACH))
-      updatedAccessGroup.push(IdentityTypeEnum.COACH);
+    if (!updatedAccessGroup.includes(IdentityTypeEnum.STAFF))
+      updatedAccessGroup.push(IdentityTypeEnum.STAFF);
 
     await this.accountService.updateUserInfoAccessGroup({
       accountId,

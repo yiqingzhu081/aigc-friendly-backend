@@ -297,6 +297,23 @@
 
 ### P2：账号角色契约收敛
 
+当前产出：
+
+- `IdentityTypeEnum` 已收敛为 `ADMIN / STAFF / GUEST / REGISTRANT`。
+- `role-access.policy.ts` 已移除培训班角色层级，改为 `ADMIN -> STAFF -> GUEST`，`REGISTRANT`
+  作为独立注册过渡状态。
+- 登录和 session 角色决策只返回通用角色；旧 training profile 不再作为登录 identity 返回。
+- user info 可见性和 accessGroup 更新权限已改为 `ADMIN / STAFF / GUEST / REGISTRANT` 口径。
+- GraphQL `IdentityTypeEnum` schema snapshot 已同步为通用角色。
+- 测试 fixture 中旧身份账号仅作为迁移期 fixture key 保留，账号 role 已映射到 `STAFF / GUEST`。
+- 已通过：
+  - `npm run typecheck`
+  - `npx eslint "{src,apps,libs,test}/**/*.ts" --cache --cache-location .eslintcache`
+  - `npm run test:e2e:file -- 03-roles-guard/roles-guard.e2e-spec.ts`
+  - `npm run test:e2e:file -- 01-auth/auth.e2e-spec.ts`
+  - `npm run test:e2e:file -- 01-auth/auth-identity.e2e-spec.ts`
+  - `npm run test:e2e:file -- 04-user-info/update-access-group.e2e-spec.ts`
+
 目标：按 P0 前已确认决策冻结账号核心角色契约，将目标语义明确为
 `ADMIN / STAFF / GUEST / REGISTRANT`，避免后续删除培训班代码时继续扩大歧义。
 

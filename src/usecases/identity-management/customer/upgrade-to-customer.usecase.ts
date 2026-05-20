@@ -145,7 +145,7 @@ export class UpgradeToCustomerUsecase {
     // 同步更新账户身份提示为 CUSTOMER，并激活账户状态
     await this.accountService.updateAccount(
       accountId,
-      { identityHint: IdentityTypeEnum.CUSTOMER, status: AccountStatus.ACTIVE },
+      { identityHint: IdentityTypeEnum.GUEST, status: AccountStatus.ACTIVE },
       manager,
     );
 
@@ -186,8 +186,8 @@ export class UpgradeToCustomerUsecase {
     const cleanedAccessGroup = userInfo.accessGroup.filter(
       (item) => item !== IdentityTypeEnum.REGISTRANT,
     );
-    if (!cleanedAccessGroup.includes(IdentityTypeEnum.CUSTOMER))
-      cleanedAccessGroup.push(IdentityTypeEnum.CUSTOMER);
+    if (!cleanedAccessGroup.includes(IdentityTypeEnum.GUEST))
+      cleanedAccessGroup.push(IdentityTypeEnum.GUEST);
 
     const needCleanup =
       cleanedAccessGroup.length !== userInfo.accessGroup.length ||
@@ -245,8 +245,8 @@ export class UpgradeToCustomerUsecase {
     const updatedAccessGroup = userInfo.accessGroup.filter(
       (item) => item !== IdentityTypeEnum.REGISTRANT,
     );
-    if (!updatedAccessGroup.includes(IdentityTypeEnum.CUSTOMER))
-      updatedAccessGroup.push(IdentityTypeEnum.CUSTOMER);
+    if (!updatedAccessGroup.includes(IdentityTypeEnum.GUEST))
+      updatedAccessGroup.push(IdentityTypeEnum.GUEST);
 
     await this.accountService.updateUserInfoAccessGroup({
       accountId,

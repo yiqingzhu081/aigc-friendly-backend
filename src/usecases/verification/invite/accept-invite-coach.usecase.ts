@@ -152,13 +152,13 @@ export class AcceptInviteCoachUsecase {
     const cleanedAccessGroup = currentAccessGroup.filter(
       (item) => item !== IdentityTypeEnum.REGISTRANT,
     );
-    if (!cleanedAccessGroup.includes(IdentityTypeEnum.COACH)) {
-      cleanedAccessGroup.push(IdentityTypeEnum.COACH);
+    if (!cleanedAccessGroup.includes(IdentityTypeEnum.STAFF)) {
+      cleanedAccessGroup.push(IdentityTypeEnum.STAFF);
     }
 
     const needUpdate =
       cleanedAccessGroup.length !== currentAccessGroup.length ||
-      !currentAccessGroup.includes(IdentityTypeEnum.COACH) ||
+      !currentAccessGroup.includes(IdentityTypeEnum.STAFF) ||
       currentAccessGroup.includes(IdentityTypeEnum.REGISTRANT);
 
     if (needUpdate) {

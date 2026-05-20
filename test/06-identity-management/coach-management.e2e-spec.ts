@@ -357,7 +357,7 @@ describe('Coach Management (e2e)', () => {
       })
       .expect(200);
     if (resp.body.errors) throw new Error(`读取教练身份失败: ${JSON.stringify(resp.body.errors)}`);
-    if (resp.body.data.login.role !== IdentityTypeEnum.COACH) throw new Error('当前角色不是 Coach');
+    if (resp.body.data.login.role !== IdentityTypeEnum.STAFF) throw new Error('当前角色不是 Coach');
     return resp.body.data.login.identity.id as number;
   };
 

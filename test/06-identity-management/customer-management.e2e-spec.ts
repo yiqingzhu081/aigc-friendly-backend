@@ -114,7 +114,7 @@ describe('Customer Management (e2e)', () => {
       })
       .expect(200);
     if (resp.body.errors) throw new Error(`读取客户身份失败: ${JSON.stringify(resp.body.errors)}`);
-    if (resp.body.data.login.role !== IdentityTypeEnum.CUSTOMER)
+    if (resp.body.data.login.role !== IdentityTypeEnum.GUEST)
       throw new Error('当前角色不是 Customer');
     return resp.body.data.login.identity.id as number;
   };

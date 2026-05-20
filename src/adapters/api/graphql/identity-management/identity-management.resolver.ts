@@ -58,9 +58,9 @@ export class IdentityManagementResolver {
       customerId: result.customerId,
       accessGroup: result.updatedAccessGroup,
       role: result.success
-        ? IdentityTypeEnum.CUSTOMER
+        ? IdentityTypeEnum.GUEST
         : result.updatedAccessGroup.includes('CUSTOMER')
-          ? IdentityTypeEnum.CUSTOMER
+          ? IdentityTypeEnum.GUEST
           : this.determineRoleFromAccessGroup(result.updatedAccessGroup),
       tokens: tokensForCustomer,
     });
@@ -101,9 +101,9 @@ export class IdentityManagementResolver {
       coachId: result.coachId,
       accessGroup: result.updatedAccessGroup,
       role: result.success
-        ? IdentityTypeEnum.COACH
+        ? IdentityTypeEnum.STAFF
         : result.updatedAccessGroup.includes('COACH')
-          ? IdentityTypeEnum.COACH
+          ? IdentityTypeEnum.STAFF
           : this.determineRoleFromAccessGroup(result.updatedAccessGroup),
       tokens: tokensForCoach,
     });

@@ -52,9 +52,7 @@ export class FetchUserInfoUsecase {
     accessGroup?: IdentityTypeEnum[];
   }): Promise<UserInfoView> {
     const base = await this.accountService.findUserInfoByAccountId(params.accountId);
-    const finalAccessGroup: IdentityTypeEnum[] = base?.accessGroup
-      ? base.accessGroup
-      : [IdentityTypeEnum.REGISTRANT];
+    const finalAccessGroup = this.normalizeAccessGroup(base?.accessGroup);
 
     return this.buildUserInfoView(base, params.accountId, finalAccessGroup);
   }
@@ -88,9 +86,7 @@ export class FetchUserInfoUsecase {
       );
     }
 
-    const finalAccessGroup: IdentityTypeEnum[] = base.accessGroup?.length
-      ? base.accessGroup
-      : [IdentityTypeEnum.REGISTRANT];
+    const finalAccessGroup = this.normalizeAccessGroup(base.accessGroup);
 
     return this.buildUserInfoView(base, accountId, finalAccessGroup) as UserInfoView & {
       nickname: string;
@@ -135,9 +131,7 @@ export class FetchUserInfoUsecase {
     }
 
     // 5. 确定最终的 accessGroup（严格使用数据库字段）
-    const finalAccessGroup: IdentityTypeEnum[] = userInfo.accessGroup ?? [
-      IdentityTypeEnum.REGISTRANT,
-    ];
+    const finalAccessGroup = this.normalizeAccessGroup(userInfo.accessGroup);
 
     // 6. 构建用户信息视图
     const userInfoView = this.buildUserInfoView(userInfo, accountId, finalAccessGroup);
@@ -213,6 +207,14 @@ export class FetchUserInfoUsecase {
     if (!tags) return null;
     if (Array.isArray(tags)) return tags.map((v) => String(v));
     return null;
+  }
+
+  private normalizeAccessGroup(accessGroup?: IdentityTypeEnum[] | null): IdentityTypeEnum[] {
+    const validRoles = new Set<string>(Object.values(IdentityTypeEnum));
+    const normalized = (accessGroup ?? []).filter((role): role is IdentityTypeEnum =>
+      validRoles.has(String(role)),
+    );
+    return normalized.length > 0 ? Array.from(new Set(normalized)) : [IdentityTypeEnum.REGISTRANT];
   }
 }
 export { UserInfoView };

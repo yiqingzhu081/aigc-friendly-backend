@@ -3,7 +3,7 @@ import { IdentityTypeEnum, UserAccountView } from '@app-types/models/account.typ
 import { UserInfoView } from '@app-types/models/auth.types';
 import { Gender, UserState } from '@app-types/models/user-info.types';
 import { UsecaseSession } from '@app-types/auth/session.types';
-import { expandRoles, hasRole } from '@core/account/policy/role-access.policy';
+import { hasRole } from '@core/account/policy/role-access.policy';
 import { canViewUserInfo } from '@core/account/policy/user-info-visibility.policy';
 import { ACCOUNT_ERROR } from '@core/common/errors';
 import { DomainError, PERMISSION_ERROR } from '@core/common/errors/domain-error';
@@ -51,7 +51,7 @@ export class AccountQueryService {
       throw new DomainError(PERMISSION_ERROR.ACCESS_DENIED, '非法的目标账户 ID');
     }
 
-    const allowed = await this.isAllowedToView(session, targetAccountId);
+    const allowed = this.isAllowedToView(session, targetAccountId);
     if (!allowed) {
       throw new DomainError(PERMISSION_ERROR.ACCESS_DENIED, '无权限查看该用户信息');
     }
@@ -88,9 +88,7 @@ export class AccountQueryService {
       );
     }
 
-    const finalAccessGroup: IdentityTypeEnum[] = base.accessGroup?.length
-      ? base.accessGroup
-      : [IdentityTypeEnum.REGISTRANT];
+    const finalAccessGroup = this.normalizeAccessGroup(base.accessGroup);
 
     return this.buildUserInfoView(base, accountId, finalAccessGroup) as UserInfoView & {
       nickname: string;
@@ -102,39 +100,12 @@ export class AccountQueryService {
     };
   }
 
-  private async isAllowedToView(
-    session: UsecaseSession,
-    targetAccountId: number,
-  ): Promise<boolean> {
+  private isAllowedToView(session: UsecaseSession, targetAccountId: number): boolean {
     const isSelf = session.accountId === targetAccountId;
     if (isSelf) return true;
     if (hasRole(session.roles, IdentityTypeEnum.ADMIN)) return true;
 
-    const expanded = expandRoles(session.roles);
-    const pureLearner = expanded.length === 1 && expanded[0] === IdentityTypeEnum.LEARNER;
-    if (pureLearner) return false;
-
-    const isCoachRole = expanded.includes(IdentityTypeEnum.COACH);
-    const isManagerRole = expanded.includes(IdentityTypeEnum.MANAGER);
-    const isCustomerRole = expanded.includes(IdentityTypeEnum.CUSTOMER);
-    if (!isCoachRole && !isManagerRole && !isCustomerRole) return false;
-
-    const [targetCoach, targetCust, targetLearner, meCustomer] = await this.fetchVisibilityFacts(
-      session,
-      targetAccountId,
-      { isCoachRole, isManagerRole, isCustomerRole },
-    );
-
-    const facts = {
-      isSelf,
-      targetIsCoach: !!(targetCoach && !targetCoach.deactivatedAt),
-      targetIsCustomer: !!(targetCust && !targetCust.deactivatedAt),
-      targetIsLearner: !!(targetLearner && !targetLearner.deactivatedAt),
-      customerOwnsTargetLearner:
-        !!meCustomer && !!targetLearner && meCustomer.id === targetLearner.customerId,
-    };
-
-    return canViewUserInfo(session.roles, facts);
+    return canViewUserInfo(session.roles, { isSelf });
   }
 
   private isAllowedToViewAccountDetail(session: UsecaseSession, targetAccountId: number): boolean {
@@ -142,48 +113,6 @@ export class AccountQueryService {
     if (isSelf) return true;
     if (hasRole(session.roles, IdentityTypeEnum.ADMIN)) return true;
     return false;
-  }
-
-  private async fetchVisibilityFacts(
-    session: UsecaseSession,
-    targetAccountId: number,
-    roles: { isCoachRole: boolean; isManagerRole: boolean; isCustomerRole: boolean },
-  ): Promise<
-    [
-      Awaited<ReturnType<typeof this.accountService.findCoachByAccountId>> | undefined,
-      Awaited<ReturnType<typeof this.accountService.findCustomerByAccountId>> | undefined,
-      Awaited<ReturnType<typeof this.accountService.findLearnerByAccountId>> | undefined,
-      Awaited<ReturnType<typeof this.accountService.findCustomerByAccountId>> | undefined,
-    ]
-  > {
-    let targetCoach:
-      | Awaited<ReturnType<typeof this.accountService.findCoachByAccountId>>
-      | undefined;
-    let targetCust:
-      | Awaited<ReturnType<typeof this.accountService.findCustomerByAccountId>>
-      | undefined;
-    let targetLearner:
-      | Awaited<ReturnType<typeof this.accountService.findLearnerByAccountId>>
-      | undefined;
-    let meCustomer:
-      | Awaited<ReturnType<typeof this.accountService.findCustomerByAccountId>>
-      | undefined;
-
-    if (roles.isCoachRole || roles.isManagerRole) {
-      [targetCoach, targetCust, targetLearner] = await Promise.all([
-        this.accountService.findCoachByAccountId(targetAccountId),
-        this.accountService.findCustomerByAccountId(targetAccountId),
-        this.accountService.findLearnerByAccountId(targetAccountId),
-      ]);
-    } else if (roles.isCustomerRole) {
-      targetLearner = await this.accountService.findLearnerByAccountId(targetAccountId);
-    }
-
-    if (roles.isCustomerRole) {
-      meCustomer = await this.accountService.findCustomerByAccountId(session.accountId);
-    }
-
-    return [targetCoach, targetCust, targetLearner, meCustomer];
   }
 
   private buildUserInfoView(
@@ -243,6 +172,14 @@ export class AccountQueryService {
     if (!tags) return null;
     if (Array.isArray(tags)) return tags.map((v) => String(v));
     return null;
+  }
+
+  private normalizeAccessGroup(accessGroup?: IdentityTypeEnum[] | null): IdentityTypeEnum[] {
+    const validRoles = new Set<string>(Object.values(IdentityTypeEnum));
+    const normalized = (accessGroup ?? []).filter((role): role is IdentityTypeEnum =>
+      validRoles.has(String(role)),
+    );
+    return normalized.length > 0 ? Array.from(new Set(normalized)) : [IdentityTypeEnum.REGISTRANT];
   }
 
   private maskToBasic(view: UserInfoView): UserInfoView {

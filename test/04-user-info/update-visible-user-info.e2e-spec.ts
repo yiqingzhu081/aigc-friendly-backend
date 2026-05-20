@@ -176,7 +176,7 @@ async function ensureOtherCustomerAndLearner(ds: DataSource): Promise<{
       loginEmail: custEmail,
       loginPassword: 'temp',
       status: AccountStatus.ACTIVE,
-      identityHint: IdentityTypeEnum.CUSTOMER,
+      identityHint: IdentityTypeEnum.GUEST,
     });
     await accountRepo.save(created);
     const saved = await accountRepo.findOne({ where: { loginName: custLogin } });
@@ -194,8 +194,8 @@ async function ensureOtherCustomerAndLearner(ds: DataSource): Promise<{
         nickname: `${custLogin}_nickname`,
         gender: Gender.SECRET,
         email: custEmail,
-        accessGroup: [IdentityTypeEnum.CUSTOMER],
-        metaDigest: [IdentityTypeEnum.CUSTOMER],
+        accessGroup: [IdentityTypeEnum.GUEST],
+        metaDigest: [IdentityTypeEnum.GUEST],
         notifyCount: 0,
         unreadCount: 0,
         userState: UserState.ACTIVE,
@@ -229,7 +229,7 @@ async function ensureOtherCustomerAndLearner(ds: DataSource): Promise<{
       loginEmail: learnerEmail,
       loginPassword: 'temp',
       status: AccountStatus.ACTIVE,
-      identityHint: IdentityTypeEnum.LEARNER,
+      identityHint: IdentityTypeEnum.GUEST,
     });
     await accountRepo.save(createdL);
     const savedL = await accountRepo.findOne({ where: { loginName: learnerLogin } });
@@ -247,8 +247,8 @@ async function ensureOtherCustomerAndLearner(ds: DataSource): Promise<{
         nickname: `${learnerLogin}_nickname`,
         gender: Gender.SECRET,
         email: learnerEmail,
-        accessGroup: [IdentityTypeEnum.LEARNER],
-        metaDigest: [IdentityTypeEnum.LEARNER],
+        accessGroup: [IdentityTypeEnum.GUEST],
+        metaDigest: [IdentityTypeEnum.GUEST],
         notifyCount: 0,
         unreadCount: 0,
         userState: UserState.ACTIVE,
@@ -492,7 +492,7 @@ describe('UpdateVisibleUserInfo (e2e)', () => {
     it('非本人修改登录 hint → 拒绝', async () => {
       const res = await updateUserInfo(app, adminToken, {
         accountId: learnerAccountId,
-        identityHint: IdentityTypeEnum.LEARNER,
+        identityHint: IdentityTypeEnum.GUEST,
       });
       expect(res.body.errors).toBeDefined();
       const code = res.body.errors?.[0]?.extensions?.errorCode;
@@ -501,7 +501,7 @@ describe('UpdateVisibleUserInfo (e2e)', () => {
 
     it('登录 hint 不在访问组内应报错', async () => {
       const res = await updateUserInfo(app, customerToken, {
-        identityHint: IdentityTypeEnum.MANAGER,
+        identityHint: IdentityTypeEnum.STAFF,
       });
       expect(res.body.errors).toBeDefined();
       const code = res.body.errors?.[0]?.extensions?.errorCode;

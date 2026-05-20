@@ -4,8 +4,7 @@ import { type UsecaseSession } from '@app-types/auth/session.types';
 import { IdentityTypeEnum } from '@app-types/models/account.types';
 import { UserInfoView } from '@app-types/models/auth.types';
 import { Gender, UserState, type GeographicInfo } from '@app-types/models/user-info.types';
-import { expandRoles, hasRole } from '@core/account/policy/role-access.policy';
-import { canViewUserInfo } from '@core/account/policy/user-info-visibility.policy';
+import { hasRole } from '@core/account/policy/role-access.policy';
 import { ACCOUNT_ERROR, DomainError, PERMISSION_ERROR } from '@core/common/errors/domain-error';
 import { Injectable } from '@nestjs/common';
 import { AccountService } from '@src/modules/account/base/services/account.service';
@@ -78,7 +77,7 @@ export class UpdateVisibleUserInfoUsecase {
   /**
    * 执行按可见性更新用户信息
    * 规则：
-   * - 权限沿用查看规则：能查看即可更新（ADMIN 全量；MANAGER / COACH 可更新 Coach / Customer / Learner；Customer 仅可更新名下 Learner；Learner 仅可更新自己）
+   * - 权限沿用查看规则：能查看即可更新（ADMIN 全量；STAFF 可更新其他账户；GUEST / REGISTRANT 仅能更新自己）
    * - 字段白名单：仅允许更新基础与联系字段；禁止修改 accessGroup / metaDigest
    * - 幂等：无字段变更则直接返回当前视图
    */
@@ -90,7 +89,7 @@ export class UpdateVisibleUserInfoUsecase {
       throw new DomainError(PERMISSION_ERROR.ACCESS_DENIED, '非法的目标账户 ID');
     }
 
-    const allowed = await this.isAllowedToUpdate(session, targetAccountId);
+    const allowed = this.isAllowedToUpdate(session, targetAccountId);
     if (!allowed) {
       throw new DomainError(PERMISSION_ERROR.ACCESS_DENIED, '无权限更新该用户信息');
     }
@@ -104,10 +103,10 @@ export class UpdateVisibleUserInfoUsecase {
         }
 
         const isSelf = session.accountId === targetAccountId;
-        const isManagerRole = expandRoles(session.roles).includes(IdentityTypeEnum.MANAGER);
+        const isStaffRole = hasRole(session.roles, IdentityTypeEnum.STAFF);
         const isAdminRole = hasRole(session.roles, IdentityTypeEnum.ADMIN);
         const sanitized = await this.sanitizePatch(patch, current, {
-          isManager: isManagerRole,
+          isStaff: isStaffRole,
           isSelf,
           isAdmin: isAdminRole,
         });
@@ -159,106 +158,28 @@ export class UpdateVisibleUserInfoUsecase {
   /**
    * 权限判定：沿用查看可见性策略
    */
-  private async isAllowedToUpdate(
-    session: UsecaseSession,
-    targetAccountId: number,
-  ): Promise<boolean> {
+  private isAllowedToUpdate(session: UsecaseSession, targetAccountId: number): boolean {
     const isSelf = session.accountId === targetAccountId;
     if (isSelf) return true;
     if (hasRole(session.roles, IdentityTypeEnum.ADMIN)) return true;
 
-    const expanded = expandRoles(session.roles);
-    const pureLearner = expanded.length === 1 && expanded[0] === IdentityTypeEnum.LEARNER;
-    if (pureLearner) return false;
-
-    const isCoachRole = expanded.includes(IdentityTypeEnum.COACH);
-    const isManagerRole = expanded.includes(IdentityTypeEnum.MANAGER);
-    const isCustomerRole = expanded.includes(IdentityTypeEnum.CUSTOMER);
-    if (!isCoachRole && !isManagerRole && !isCustomerRole) return false;
-
-    const [targetCoach, targetCust, targetLearner, meCustomer] = await this.fetchVisibilityFacts(
-      session,
-      targetAccountId,
-      { isCoachRole, isManagerRole, isCustomerRole },
-    );
-
-    const facts = {
-      isSelf,
-      targetIsCoach: !!(targetCoach && !targetCoach.deactivatedAt),
-      targetIsCustomer: !!(targetCust && !targetCust.deactivatedAt),
-      targetIsLearner: !!(targetLearner && !targetLearner.deactivatedAt),
-      customerOwnsTargetLearner:
-        !!meCustomer && !!targetLearner && meCustomer.id === targetLearner.customerId,
-    } as const;
-
-    return canViewUserInfo(session.roles, facts);
-  }
-
-  /**
-   * 查询可见性相关事实
-   */
-  private async fetchVisibilityFacts(
-    session: UsecaseSession,
-    targetAccountId: number,
-    roles: { isCoachRole: boolean; isManagerRole: boolean; isCustomerRole: boolean },
-  ): Promise<
-    [
-      Awaited<ReturnType<typeof this.accountService.findCoachByAccountId>> | undefined,
-      Awaited<ReturnType<typeof this.accountService.findCustomerByAccountId>> | undefined,
-      Awaited<ReturnType<typeof this.accountService.findLearnerByAccountId>> | undefined,
-      Awaited<ReturnType<typeof this.accountService.findCustomerByAccountId>> | undefined,
-    ]
-  > {
-    let targetCoach:
-      | Awaited<ReturnType<typeof this.accountService.findCoachByAccountId>>
-      | undefined;
-    let targetCust:
-      | Awaited<ReturnType<typeof this.accountService.findCustomerByAccountId>>
-      | undefined;
-    let targetLearner:
-      | Awaited<ReturnType<typeof this.accountService.findLearnerByAccountId>>
-      | undefined;
-    let meCustomer:
-      | Awaited<ReturnType<typeof this.accountService.findCustomerByAccountId>>
-      | undefined;
-
-    if (roles.isCoachRole || roles.isManagerRole) {
-      [targetCoach, targetCust, targetLearner] = await Promise.all([
-        this.accountService.findCoachByAccountId(targetAccountId),
-        this.accountService.findCustomerByAccountId(targetAccountId),
-        this.accountService.findLearnerByAccountId(targetAccountId),
-      ]);
-    } else if (roles.isCustomerRole) {
-      targetLearner = await this.accountService.findLearnerByAccountId(targetAccountId);
-    }
-
-    if (roles.isCustomerRole) {
-      meCustomer = await this.accountService.findCustomerByAccountId(session.accountId);
-    }
-
-    return [targetCoach, targetCust, targetLearner, meCustomer];
+    return hasRole(session.roles, IdentityTypeEnum.STAFF);
   }
 
   /**
    * 清洗并验证更新字段
    */
   /**
-   * 清洗并验证更新字段（支持 isSelf / isManager 开关）
-   * - manager 自改：允许更广的白名单（包含 userState）
-   * - manager 改他人：仅允许极少字段（nickname / avatarUrl / phone）
-   * - 非 manager：允许基础与联系白名单，不允许 userState
-   */
-  /**
-   * 清洗并验证更新字段（支持 isSelf / isManager / isAdmin 开关）
-   * - admin：允许除敏感系统字段外的全部白名单（等同于 manager 自改）
-   * - manager 自改：允许更广的白名单（包含 userState/notifyCount/unreadCount）
-   * - manager 改他人：仅允许极少字段（nickname / avatarUrl / phone）
-   * - 非 manager：允许基础与联系白名单，不允许用户状态与计数
+   * 清洗并验证更新字段（支持 isSelf / isStaff / isAdmin 开关）
+   * - admin：允许除敏感系统字段外的全部白名单（等同于 staff 自改）
+   * - staff 自改：允许更广的白名单（包含 userState/notifyCount/unreadCount）
+   * - staff 改他人：仅允许极少字段（nickname / avatarUrl / phone）
+   * - 非 staff：允许基础与联系白名单，不允许用户状态与计数
    */
   private async sanitizePatch(
     patch: UserInfoPatch,
     current: UserInfoRecord,
-    flags: { isManager: boolean; isSelf: boolean; isAdmin: boolean },
+    flags: { isStaff: boolean; isSelf: boolean; isAdmin: boolean },
   ): Promise<UserInfoUpdatePatch> {
     const out: UserInfoUpdatePatch = {};
     const allow = (key: UserInfoUpdateField): boolean => this.isFieldAllowed(key, flags);
@@ -271,7 +192,7 @@ export class UpdateVisibleUserInfoUsecase {
 
     await this.applyBasicFields(patch, current, allow, assignIfChanged);
     this.applyExtendedFields(patch, current, allow, assignIfChanged);
-    this.applyManagerSelfOnlyFields(patch, allow, assignIfChanged, flags);
+    this.applyStaffSelfOnlyFields(patch, allow, assignIfChanged, flags);
     return out;
   }
 
@@ -394,17 +315,17 @@ export class UpdateVisibleUserInfoUsecase {
     }
   }
 
-  private applyManagerSelfOnlyFields(
+  private applyStaffSelfOnlyFields(
     patch: UserInfoPatch,
     allow: (key: UserInfoUpdateField) => boolean,
     assignIfChanged: <K extends UserInfoUpdateField>(key: K, next: UserInfoUpdatePatch[K]) => void,
-    _flags: { isManager: boolean; isSelf: boolean; isAdmin: boolean },
+    _flags: { isStaff: boolean; isSelf: boolean; isAdmin: boolean },
   ): void {
     if (typeof patch.userState !== 'undefined') {
       if (!allow('userState')) {
         throw new DomainError(
           PERMISSION_ERROR.INSUFFICIENT_PERMISSIONS,
-          '仅在 manager 自改或 admin 时可修改用户状态',
+          '仅在 staff 自改或 admin 时可修改用户状态',
         );
       }
       assignIfChanged('userState', normalizeVisibleUserStateInput(patch.userState));
@@ -413,7 +334,7 @@ export class UpdateVisibleUserInfoUsecase {
       if (!allow('notifyCount')) {
         throw new DomainError(
           PERMISSION_ERROR.INSUFFICIENT_PERMISSIONS,
-          '仅在 manager 自改或 admin 时可修改通知计数',
+          '仅在 staff 自改或 admin 时可修改通知计数',
         );
       }
       assignIfChanged('notifyCount', normalizeVisibleNonNegativeIntInput(patch.notifyCount));
@@ -422,7 +343,7 @@ export class UpdateVisibleUserInfoUsecase {
       if (!allow('unreadCount')) {
         throw new DomainError(
           PERMISSION_ERROR.INSUFFICIENT_PERMISSIONS,
-          '仅在 manager 自改或 admin 时可修改未读计数',
+          '仅在 staff 自改或 admin 时可修改未读计数',
         );
       }
       assignIfChanged('unreadCount', normalizeVisibleNonNegativeIntInput(patch.unreadCount));
@@ -469,16 +390,16 @@ export class UpdateVisibleUserInfoUsecase {
   }
 
   /**
-   * 字段允许策略（isSelf / isManager）
-   * - manager 自改：允许 nickname / gender / birthDate / avatarUrl / email / signature / address / phone / tags / geographic / userState
-   * - manager 改他人：仅允许 nickname / avatarUrl / phone
-   * - 非 manager：允许基础与联系白名单（不含 userState）
+   * 字段允许策略（isSelf / isStaff）
+   * - staff 自改：允许 nickname / gender / birthDate / avatarUrl / email / signature / address / phone / tags / geographic / userState
+   * - staff 改他人：仅允许 nickname / avatarUrl / phone
+   * - 非 staff：允许基础与联系白名单（不含 userState）
    */
   private isFieldAllowed(
     key: UserInfoUpdateField,
-    flags: { isManager: boolean; isSelf: boolean; isAdmin: boolean },
+    flags: { isStaff: boolean; isSelf: boolean; isAdmin: boolean },
   ): boolean {
-    const selfManagerAllowed: UserInfoUpdateField[] = [
+    const staffSelfAllowed: UserInfoUpdateField[] = [
       'nickname',
       'gender',
       'birthDate',
@@ -493,8 +414,8 @@ export class UpdateVisibleUserInfoUsecase {
       'notifyCount',
       'unreadCount',
     ];
-    const managerOtherAllowed: UserInfoUpdateField[] = ['nickname', 'avatarUrl', 'phone'];
-    const nonManagerAllowed: UserInfoUpdateField[] = [
+    const staffOtherAllowed: UserInfoUpdateField[] = ['nickname', 'avatarUrl', 'phone'];
+    const nonStaffAllowed: UserInfoUpdateField[] = [
       'nickname',
       'gender',
       'birthDate',
@@ -508,12 +429,12 @@ export class UpdateVisibleUserInfoUsecase {
     ];
 
     if (flags.isAdmin) {
-      return selfManagerAllowed.includes(key);
+      return staffSelfAllowed.includes(key);
     }
-    if (flags.isManager) {
-      return flags.isSelf ? selfManagerAllowed.includes(key) : managerOtherAllowed.includes(key);
+    if (flags.isStaff) {
+      return flags.isSelf ? staffSelfAllowed.includes(key) : staffOtherAllowed.includes(key);
     }
-    return nonManagerAllowed.includes(key);
+    return nonStaffAllowed.includes(key);
   }
 
   /**
@@ -566,7 +487,7 @@ export class UpdateAccessGroupUsecase {
   /**
    * 执行访问组更新
    * 规则：
-   * - 仅允许 admin / manager 操作
+   * - 仅允许 admin / staff 操作
    * - 访问组不能为空
    * - identityHint 必须包含在访问组中
    */
@@ -579,9 +500,9 @@ export class UpdateAccessGroupUsecase {
 
     const allowed =
       hasRole(session.roles, IdentityTypeEnum.ADMIN) ||
-      hasRole(session.roles, IdentityTypeEnum.MANAGER);
+      hasRole(session.roles, IdentityTypeEnum.STAFF);
     if (!allowed) {
-      throw new DomainError(PERMISSION_ERROR.ACCESS_DENIED, '仅 admin / manager 可调整访问组');
+      throw new DomainError(PERMISSION_ERROR.ACCESS_DENIED, '仅 admin / staff 可调整访问组');
     }
 
     const normalizedAccessGroup = this.normalizeAccessGroup(accessGroup);
@@ -641,14 +562,9 @@ export class UpdateAccessGroupUsecase {
 
     const priority: IdentityTypeEnum[] = [
       IdentityTypeEnum.ADMIN,
-      IdentityTypeEnum.MANAGER,
-      IdentityTypeEnum.COACH,
-      IdentityTypeEnum.CUSTOMER,
-      IdentityTypeEnum.LEARNER,
       IdentityTypeEnum.STAFF,
-      IdentityTypeEnum.STUDENT,
-      IdentityTypeEnum.REGISTRANT,
       IdentityTypeEnum.GUEST,
+      IdentityTypeEnum.REGISTRANT,
     ];
 
     return priority.find((role) => accessGroup.includes(role)) ?? accessGroup[0];
@@ -669,7 +585,9 @@ export class UpdateAccessGroupUsecase {
   private normalizeAccessGroup(input: IdentityTypeEnum[]): IdentityTypeEnum[] {
     const out: IdentityTypeEnum[] = [];
     const seen = new Set<IdentityTypeEnum>();
+    const validRoles = new Set<string>(Object.values(IdentityTypeEnum));
     for (const item of input) {
+      if (!validRoles.has(String(item))) continue;
       if (!seen.has(item)) {
         seen.add(item);
         out.push(item);

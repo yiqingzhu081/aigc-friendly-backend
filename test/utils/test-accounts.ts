@@ -39,16 +39,16 @@ export const testAccountsConfig: Record<string, TestAccountConfig> = {
     loginEmail: 'manager@example.com',
     loginPassword: 'testManager@2024',
     status: AccountStatus.ACTIVE,
-    accessGroup: [IdentityTypeEnum.MANAGER],
-    identityType: IdentityTypeEnum.MANAGER,
+    accessGroup: [IdentityTypeEnum.STAFF],
+    identityType: IdentityTypeEnum.STAFF,
   },
   coach: {
     loginName: 'testcoach',
     loginEmail: 'coach@example.com',
     loginPassword: 'testCoach@2024',
     status: AccountStatus.ACTIVE,
-    accessGroup: [IdentityTypeEnum.COACH],
-    identityType: IdentityTypeEnum.COACH,
+    accessGroup: [IdentityTypeEnum.STAFF],
+    identityType: IdentityTypeEnum.STAFF,
   },
   admin: {
     loginName: 'testadmin',
@@ -64,16 +64,16 @@ export const testAccountsConfig: Record<string, TestAccountConfig> = {
     loginEmail: 'customer@example.com',
     loginPassword: 'testCustomer@2024',
     status: AccountStatus.ACTIVE,
-    accessGroup: [IdentityTypeEnum.CUSTOMER],
-    identityType: IdentityTypeEnum.CUSTOMER,
+    accessGroup: [IdentityTypeEnum.GUEST],
+    identityType: IdentityTypeEnum.GUEST,
   },
   learner: {
     loginName: 'testlearner',
     loginEmail: 'learner@example.com',
     loginPassword: 'testLearner@2024',
     status: AccountStatus.ACTIVE,
-    accessGroup: [IdentityTypeEnum.LEARNER],
-    identityType: IdentityTypeEnum.LEARNER,
+    accessGroup: [IdentityTypeEnum.GUEST],
+    identityType: IdentityTypeEnum.GUEST,
   },
   guest: {
     loginName: 'testguest',
@@ -96,8 +96,8 @@ export const testAccountsConfig: Record<string, TestAccountConfig> = {
     loginEmail: 'coachcustomer@example.com',
     loginPassword: 'testCoachCustomer@2024',
     status: AccountStatus.ACTIVE,
-    accessGroup: [IdentityTypeEnum.COACH, IdentityTypeEnum.CUSTOMER],
-    identityType: IdentityTypeEnum.COACH,
+    accessGroup: [IdentityTypeEnum.STAFF, IdentityTypeEnum.GUEST],
+    identityType: IdentityTypeEnum.STAFF,
   },
 };
 
@@ -118,7 +118,7 @@ export const cleanupTestAccounts = async (dataSource: DataSource): Promise<void>
 /**
  * 造数入口（优先用 Usecase；无 Usecase 时走 repo 回落）
  * - 不写 metaDigest，交由系统内部一致性逻辑生成
- * - 对需要的身份（MANAGER/COACH）补齐身份表
+ * - 对仍覆盖旧身份 API 的测试账号补齐对应身份表
  */
 export const seedTestAccounts = async (opts: {
   dataSource: DataSource;
@@ -169,36 +169,36 @@ const createIdentityForAccount = async (
     createdMap: Map<string, number>;
   },
 ): Promise<void> => {
-  const { cfg, accountId, createAccountUsecase, createdMap } = params;
+  const { key, cfg, accountId, createAccountUsecase, createdMap } = params;
 
-  // Manager 身份
-  if (cfg.identityType === IdentityTypeEnum.MANAGER) {
-    await createManagerIdentity(dataSource, cfg, accountId);
-  }
-  // Coach 身份
-  else if (cfg.identityType === IdentityTypeEnum.COACH) {
-    await createCoachIdentity(dataSource, cfg, accountId);
-  }
-  // Staff 身份
-  else if (cfg.identityType === IdentityTypeEnum.STAFF) {
-    await createStaffIdentity(dataSource, cfg, accountId);
-  }
-  // Customer 身份
-  else if (
-    cfg.identityType === IdentityTypeEnum.CUSTOMER ||
-    cfg.accessGroup.includes(IdentityTypeEnum.CUSTOMER)
-  ) {
-    await createCustomerIdentity(dataSource, cfg, accountId);
-  }
-  // Learner 身份
-  else if (cfg.identityType === IdentityTypeEnum.LEARNER) {
-    await createLearnerIdentity({
-      dataSource,
-      cfg,
-      accountId,
-      createAccountUsecase,
-      createdMap,
-    });
+  switch (key) {
+    case 'staff':
+      await createStaffIdentity(dataSource, cfg, accountId);
+      return;
+    case 'manager':
+      await createManagerIdentity(dataSource, cfg, accountId);
+      return;
+    case 'coach':
+      await createCoachIdentity(dataSource, cfg, accountId);
+      return;
+    case 'customer':
+      await createCustomerIdentity(dataSource, cfg, accountId);
+      return;
+    case 'learner':
+      await createLearnerIdentity({
+        dataSource,
+        cfg,
+        accountId,
+        createAccountUsecase,
+        createdMap,
+      });
+      return;
+    case 'coachCustomer':
+      await createCoachIdentity(dataSource, cfg, accountId);
+      await createCustomerIdentity(dataSource, cfg, accountId);
+      return;
+    default:
+      return;
   }
 };
 

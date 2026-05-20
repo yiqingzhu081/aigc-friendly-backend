@@ -167,16 +167,8 @@ export class AuthResolver {
     role: IdentityTypeEnum,
   ): IdentityUnionType {
     switch (role) {
-      case IdentityTypeEnum.MANAGER:
-        return this.mapManagerIdentity(identity as ManagerIdentityEntity);
-      case IdentityTypeEnum.COACH:
-        return this.mapCoachIdentity(identity as CoachIdentityEntity);
       case IdentityTypeEnum.STAFF:
         return this.mapStaffIdentity(identity as StaffIdentityEntity);
-      case IdentityTypeEnum.CUSTOMER:
-        return this.mapCustomerIdentity(identity as CustomerIdentityEntity);
-      case IdentityTypeEnum.LEARNER:
-        return this.mapLearnerIdentity(identity as LearnerIdentityEntity);
       default:
         throw new DomainError(PERMISSION_ERROR.ACCESS_DENIED, `不支持的身份类型: ${role}`);
     }

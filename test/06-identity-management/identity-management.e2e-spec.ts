@@ -367,13 +367,13 @@ describe('IdentityManagement (e2e)', () => {
           loginPassword: 'ComplexPass123!@#',
           loginEmail: `learner_db_${Date.now()}@example.com`,
           status: AccountStatus.ACTIVE,
-          identityHint: IdentityTypeEnum.LEARNER,
+          identityHint: IdentityTypeEnum.GUEST,
         },
         userInfoData: {
           nickname: `testlearner_db_nickname_${Date.now()}`,
           email: `learner_db_${Date.now()}@example.com`,
-          accessGroup: [IdentityTypeEnum.LEARNER],
-          metaDigest: [IdentityTypeEnum.LEARNER],
+          accessGroup: [IdentityTypeEnum.GUEST],
+          metaDigest: [IdentityTypeEnum.GUEST],
           gender: Gender.SECRET,
           userState: UserState.ACTIVE,
           notifyCount: 0,
@@ -432,13 +432,13 @@ describe('IdentityManagement (e2e)', () => {
           loginPassword: 'ComplexPass123!@#',
           loginEmail: `learner_jwt_${Date.now()}@example.com`,
           status: AccountStatus.ACTIVE,
-          identityHint: IdentityTypeEnum.LEARNER,
+          identityHint: IdentityTypeEnum.GUEST,
         },
         userInfoData: {
           nickname: `testlearner_jwt_nickname_${Date.now()}`,
           email: `learner_jwt_${Date.now()}@example.com`,
-          accessGroup: [IdentityTypeEnum.LEARNER],
-          metaDigest: [IdentityTypeEnum.LEARNER],
+          accessGroup: [IdentityTypeEnum.GUEST],
+          metaDigest: [IdentityTypeEnum.GUEST],
           gender: Gender.SECRET,
           userState: UserState.ACTIVE,
           notifyCount: 0,
@@ -484,13 +484,13 @@ describe('IdentityManagement (e2e)', () => {
           loginPassword: 'ComplexPass123!@#',
           loginEmail: `learner_role_${Date.now()}@example.com`,
           status: AccountStatus.ACTIVE,
-          identityHint: IdentityTypeEnum.LEARNER,
+          identityHint: IdentityTypeEnum.GUEST,
         },
         userInfoData: {
           nickname: `testlearner_role_nickname_${Date.now()}`,
           email: `learner_role_${Date.now()}@example.com`,
-          accessGroup: [IdentityTypeEnum.LEARNER],
-          metaDigest: [IdentityTypeEnum.LEARNER],
+          accessGroup: [IdentityTypeEnum.GUEST],
+          metaDigest: [IdentityTypeEnum.GUEST],
           gender: Gender.SECRET,
           userState: UserState.ACTIVE,
           notifyCount: 0,
@@ -528,7 +528,7 @@ describe('IdentityManagement (e2e)', () => {
       expect(response.body.data.upgradeToCustomer.tokens).toBeNull();
 
       // 验证角色决策结果
-      expect(response.body.data.upgradeToCustomer.role).toBe(IdentityTypeEnum.CUSTOMER);
+      expect(response.body.data.upgradeToCustomer.role).toBe(IdentityTypeEnum.GUEST);
       expect(response.body.data.upgradeToCustomer.accessGroup).toContain('CUSTOMER');
     });
   });
