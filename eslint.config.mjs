@@ -26,6 +26,7 @@ const MODULES_CONTRACTS_ELEMENT_PATTERNS = [
 // Keep this in sync with MODULES_CONTRACTS_ELEMENT_PATTERNS.
 const MODULE_BOUNDARY_CONTRACT_FILE_PATH_PATTERN = /(^|[/\\])[^/\\]+\.contract(?:\.ts)?$/;
 const ENTITY_FILE_PATH_PATTERN = /(^|[/\\])[^/\\]+\.entity\.ts$/;
+const GRAPHQL_ADAPTER_ROOT = path.join(PROJECT_ROOT, 'src', 'adapters', 'api', 'graphql');
 const ENTITY_FORBIDDEN_IMPORT_SOURCES = new Set([
   '@nestjs/common',
   '@nestjs/graphql',
@@ -82,6 +83,23 @@ const ENTITY_FORBIDDEN_DECORATOR_NAMES = new Set([
   'ValidateNested',
 ]);
 const GRAPHQL_SCHEMA_REGISTRATION_FUNCTION_NAMES = new Set(['registerEnumType', 'registerScalarType']);
+const GRAPHQL_ADAPTER_DECORATOR_NAMES = new Set([
+  'Args',
+  'ArgsType',
+  'Context',
+  'Field',
+  'HideField',
+  'InputType',
+  'InterfaceType',
+  'Mutation',
+  'ObjectType',
+  'Parent',
+  'Query',
+  'ResolveField',
+  'Resolver',
+  'Root',
+  'Subscription',
+]);
 const TRANSACTION_MANAGER_ORM_METHODS = new Set([
   'createQueryBuilder',
   'delete',
@@ -818,6 +836,63 @@ const localArchitecturePlugin = {
         };
       },
     },
+    'no-graphql-decorators-outside-adapters': {
+      meta: {
+        type: /** @type {const} */ ('problem'),
+        docs: {
+          description: 'disallow GraphQL decorators outside the GraphQL adapter layer',
+        },
+        schema: [],
+      },
+      /** @param {import('eslint').Rule.RuleContext} context */
+      create(context) {
+        if (isPathInside(context.filename, GRAPHQL_ADAPTER_ROOT)) {
+          return {};
+        }
+
+        return {
+          /** @param {import('@typescript-eslint/types').TSESTree.ImportDeclaration} node */
+          ImportDeclaration(node) {
+            if (node.source.value !== '@nestjs/graphql') {
+              return;
+            }
+            for (const specifier of node.specifiers) {
+              if (specifier.type !== 'ImportSpecifier') {
+                continue;
+              }
+              const importedName =
+                specifier.imported.type === 'Identifier'
+                  ? specifier.imported.name
+                  : String(specifier.imported.value);
+              if (!GRAPHQL_ADAPTER_DECORATOR_NAMES.has(importedName)) {
+                continue;
+              }
+              context.report({
+                node: /** @type {import('estree').Node} */ (
+                  /** @type {unknown} */ (specifier)
+                ),
+                message:
+                  'GraphQL decorator 只能出现在 src/adapters/api/graphql/**。当前导入: "{{importedName}}"',
+                data: { importedName },
+              });
+            }
+          },
+          /** @param {import('@typescript-eslint/types').TSESTree.Decorator} node */
+          Decorator(node) {
+            const decoratorName = getDecoratorName(node);
+            if (!decoratorName || !GRAPHQL_ADAPTER_DECORATOR_NAMES.has(decoratorName)) {
+              return;
+            }
+            context.report({
+              node: /** @type {import('estree').Node} */ (/** @type {unknown} */ (node)),
+              message:
+                'GraphQL decorator 只能出现在 src/adapters/api/graphql/**。当前装饰器: "{{decoratorName}}"',
+              data: { decoratorName },
+            });
+          },
+        };
+      },
+    },
     'no-cross-domain-usecases-imports': {
       meta: {
         type: /** @type {const} */ ('problem'),
@@ -1445,6 +1520,7 @@ export default defineConfig(
       'local-architecture/no-cross-domain-modules-imports': 'error',
       'local-architecture/no-adapter-decorators-on-entities': 'error',
       'local-architecture/no-boundary-port-naming-drift': 'error',
+      'local-architecture/no-graphql-decorators-outside-adapters': 'error',
       'local-architecture/no-graphql-schema-registration-outside-schema': 'error',
       'local-architecture/no-transaction-manager-alias': 'error',
       'local-architecture/no-usecase-transaction-manager-orm-api': 'error',
@@ -1560,6 +1636,7 @@ export default defineConfig(
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/unbound-method': 'off',
       'local-architecture/no-cross-domain-modules-imports': 'off',
+      'local-architecture/no-graphql-decorators-outside-adapters': 'off',
       'no-console': 'off',
     },
   },

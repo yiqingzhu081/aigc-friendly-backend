@@ -75,6 +75,11 @@ performs an automatic `--fix` pass.
   `src/adapters/api/graphql/schema/`.
   GraphQL enum and scalar registration must stay centralized in the schema registry.
 
+- `local-architecture/no-graphql-decorators-outside-adapters`
+  Blocks GraphQL decorators such as `@ObjectType`, `@Field`, `@InputType`, `@Resolver`,
+  `@Query`, and `@Mutation` outside `src/adapters/api/graphql/**`.
+  GraphQL protocol types must stay in the adapter layer and must not leak downward.
+
 - `no-restricted-imports`
   Blocks direct `src/types/**`, `@src/types/**`, and `**/src/types/**` imports.
   Shared global types must use `@app-types/*`.
@@ -130,5 +135,7 @@ Run these when preparing P3a inventory or reviewing architecture-sensitive patch
 ## Notes
 
 - Tests have a relaxed override for some strictness rules; do not infer production architecture exceptions from test-only imports.
+- Tests may define local GraphQL resolver fixtures, so the GraphQL decorator placement rule is disabled
+  for test files.
 - Runtime checks not implemented in ESLint may still be documented in rule files.
 - If a document says "ESLint blocks" a rule, keep this index and `eslint.config.mjs` aligned.
