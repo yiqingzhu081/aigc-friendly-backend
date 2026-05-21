@@ -1,4 +1,4 @@
-linimport { AudienceTypeEnum } from '@app-types/models/account.types';
+import { AudienceTypeEnum } from '@app-types/models/account.types';
 import {
   SubjectType,
   VerificationRecordStatus,

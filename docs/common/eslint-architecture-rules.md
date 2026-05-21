@@ -86,6 +86,11 @@ performs an automatic `--fix` pass.
   QueryService may depend on same-domain QueryServices, read repositories, core, types, or
   infrastructure query implementations, but not mixed read/write services.
 
+- `local-architecture/no-upstream-entity-imports`
+  Blocks `src/adapters/**` and `src/usecases/**` from importing ORM `*.entity.ts` files.
+  Upstream layers must use View, DTO, record snapshot, or stable contract types instead of
+  importing Entity classes, including type-only imports.
+
 - `no-restricted-imports`
   Blocks direct `src/types/**`, `@src/types/**`, and `**/src/types/**` imports.
   Shared global types must use `@app-types/*`.
@@ -113,8 +118,8 @@ performs an automatic `--fix` pass.
 These rules are documented review rules in the current project unless and until matching lint rules are added:
 
 - Aggregate child-entity direct writes outside the aggregate root entry.
-- ORM Entity purity beyond adapter decorator/import checks, including accidental Entity output leaks
-  from adapters, usecases, QueryServices, or module services.
+- ORM Entity purity beyond adapter decorator/import and upstream Entity import checks, including
+  accidental Entity output leaks from QueryServices or module services.
 - Infrastructure runtime contract naming drift such as BullMQ payload files using layer boundary
   `*.contract.ts` naming.
 
@@ -132,6 +137,8 @@ Run these when preparing P3a inventory or reviewing architecture-sensitive patch
   `rg -n "from ['\"](@src/modules/|@modules/|src/modules/)" src/modules -g '*.ts'`
 - ORM Entity adapter decorators:
   `rg -n "@(ObjectType|Field|InputType|ArgsType|InterfaceType)|@ApiProperty|@nestjs/graphql|@nestjs/swagger|class-validator|class-transformer" src/modules src/core src/infrastructure -g '*entity.ts' -g '*.entity.ts'`
+- Upstream Entity imports:
+  `rg -n "from ['\"].*\\.entity(?:\\.ts)?['\"]|import\\(['\"].*\\.entity(?:\\.ts)?['\"]\\)|require\\(['\"].*\\.entity(?:\\.ts)?['\"]\\)" src/adapters src/usecases -g '*.ts'`
 - QueryService depending on mixed read/write services:
   `rg -n "from ['\"].*(\\.service|/services/|@modules/|@src/modules/)" src/modules -g '*query.service.ts'`
 - Usecase direct ORM calls on transaction-like values are enforced by ESLint; broad text scans for

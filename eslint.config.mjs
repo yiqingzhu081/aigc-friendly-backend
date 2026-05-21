@@ -25,7 +25,7 @@ const MODULES_CONTRACTS_ELEMENT_PATTERNS = [
 ];
 // Keep this in sync with MODULES_CONTRACTS_ELEMENT_PATTERNS.
 const MODULE_BOUNDARY_CONTRACT_FILE_PATH_PATTERN = /(^|[/\\])[^/\\]+\.contract(?:\.ts)?$/;
-const ENTITY_FILE_PATH_PATTERN = /(^|[/\\])[^/\\]+\.entity\.ts$/;
+const ENTITY_FILE_PATH_PATTERN = /(^|[/\\])[^/\\]+\.entity(?:\.ts)?$/;
 const GRAPHQL_ADAPTER_ROOT = path.join(PROJECT_ROOT, 'src', 'adapters', 'api', 'graphql');
 const ENTITY_FORBIDDEN_IMPORT_SOURCES = new Set([
   '@nestjs/common',
@@ -921,6 +921,70 @@ const localArchitecturePlugin = {
         };
       },
     },
+    'no-upstream-entity-imports': {
+      meta: {
+        type: /** @type {const} */ ('problem'),
+        docs: {
+          description: 'disallow adapters and usecases importing ORM entities',
+        },
+        schema: [],
+      },
+      /** @param {import('eslint').Rule.RuleContext} context */
+      create(context) {
+        if (
+          !isPathInside(context.filename, ADAPTERS_ROOT) &&
+          !isPathInside(context.filename, USECASES_ROOT)
+        ) {
+          return {};
+        }
+
+        /**
+         * @param {import('estree').Node} node
+         * @param {string} specifier
+         * @param {string} targetPath
+         * @returns {void}
+         */
+        function reportIfEntityImport(node, specifier, targetPath) {
+          if (!isEntityFilePath(targetPath)) {
+            return;
+          }
+          context.report({
+            node,
+            message:
+              'Adapters / Usecases 禁止 import ORM Entity；请使用 View、DTO、record snapshot 或稳定 contract type。当前 import: "{{specifier}}"',
+            data: { specifier },
+          });
+        }
+
+        /**
+         * @param {import('estree').Node & { source?: { value?: unknown } }} node
+         * @returns {void}
+         */
+        function reportStaticImportIfNeeded(node) {
+          checkStaticImportLikeNode(context, node, (specifier, targetPath) => {
+            reportIfEntityImport(node, specifier, targetPath);
+          });
+        }
+
+        return {
+          ImportDeclaration: reportStaticImportIfNeeded,
+          ExportAllDeclaration: reportStaticImportIfNeeded,
+          ExportNamedDeclaration: reportStaticImportIfNeeded,
+          /** @param {import('estree').CallExpression} node */
+          CallExpression(node) {
+            checkRequireCallNode(context, node, (specifier, targetPath) => {
+              reportIfEntityImport(node, specifier, targetPath);
+            });
+          },
+          /** @param {import('estree').ImportExpression} node */
+          ImportExpression(node) {
+            checkImportExpressionNode(context, node, (specifier, targetPath) => {
+              reportIfEntityImport(node, specifier, targetPath);
+            });
+          },
+        };
+      },
+    },
     'no-queryservice-to-mixed-service-imports': {
       meta: {
         type: /** @type {const} */ ('problem'),
@@ -1613,6 +1677,7 @@ export default defineConfig(
       'local-architecture/no-graphql-schema-registration-outside-schema': 'error',
       'local-architecture/no-queryservice-to-mixed-service-imports': 'error',
       'local-architecture/no-transaction-manager-alias': 'error',
+      'local-architecture/no-upstream-entity-imports': 'error',
       'local-architecture/no-usecase-transaction-manager-orm-api': 'error',
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-floating-promises': 'error',
