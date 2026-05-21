@@ -149,5 +149,8 @@ Run these when preparing P3a inventory or reviewing architecture-sensitive patch
 - Tests have a relaxed override for some strictness rules; do not infer production architecture exceptions from test-only imports.
 - Tests may define local GraphQL resolver fixtures, so the GraphQL decorator placement rule is disabled
   for test files.
+- Root-level CommonJS helper files under `scripts/*.js` and `test/*.js` use a non-type-checked
+  ESLint override because they are runtime scripts / Jest config files outside the TypeScript
+  project service.
 - Runtime checks not implemented in ESLint may still be documented in rule files.
 - If a document says "ESLint blocks" a rule, keep this index and `eslint.config.mjs` aligned.

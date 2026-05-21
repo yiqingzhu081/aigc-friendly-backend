@@ -1777,6 +1777,17 @@ export default defineConfig(
     },
   },
   {
+    ...tseslint.configs.disableTypeChecked,
+    files: ['scripts/*.js', 'test/*.js'],
+    rules: {
+      ...tseslint.configs.disableTypeChecked.rules,
+      '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-var-requires': 'off',
+      complexity: 'off',
+      'no-console': 'off',
+    },
+  },
+  {
     files: ['test/**/*.ts', '**/*.spec.ts', '**/*.test.ts', 'e2e/**/*.ts'],
     rules: {
       complexity: 'off',

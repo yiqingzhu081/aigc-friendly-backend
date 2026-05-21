@@ -59,9 +59,9 @@ const DEFAULT_GROUP = 'core';
 
 const parseCsv = (raw) =>
   (raw || '')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 
 const requestedGroup = (process.env.E2E_GROUP || '').trim();
 const selectedGroupName = requestedGroup || DEFAULT_GROUP;
