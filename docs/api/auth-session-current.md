@@ -93,4 +93,4 @@ Resolver、Guard、Usecase 不应各自手写不同的 session shape。
 - 不在 auth resolver 中直接依赖 modules(service) 或 infrastructure。
 - 不在 GraphQL DTO 中下沉业务规则。
 - 不把 ORM Entity 作为登录输出。
-- 不把新项目的特定业务域 current contract 复制到本项目。
+- 不把其他业务域的特定 current contract 复制到本项目。

@@ -8,7 +8,4 @@
 - 不覆盖 `docs/common/*.rules.md`、`docs/api/*.md` 或 `AGENTS.md`。
 - 若某条规则仍有效，应迁入稳定 docs，而不是只留在 deprecated 文档中。
 
-## Archived Plans
-
-- [account-generic-identity-plan.md](./account-generic-identity-plan.md)
-- [layered-governance-alignment-plan.md](./layered-governance-alignment-plan.md)
+当前没有保留已完成计划归档。
