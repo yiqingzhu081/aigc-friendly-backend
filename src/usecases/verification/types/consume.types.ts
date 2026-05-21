@@ -3,7 +3,7 @@
 import { AudienceTypeEnum } from '@app-types/models/account.types';
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
 import { VerificationRecordType } from '@app-types/models/verification-record.types';
-import { VerificationRecordView } from '@src/modules/verification-record/services/verification-read.service';
+import type { VerificationRecordView } from '@src/modules/verification-record/verification-record.types';
 import { PasswordResetHandlerResult } from '@src/usecases/verification/password/reset-password-result.types';
 
 /**

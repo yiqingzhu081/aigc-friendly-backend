@@ -137,6 +137,34 @@ function isEntityFilePath(filePath) {
 }
 
 /**
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+function isQueryServiceFilePath(filePath) {
+  return /(^|[/\\])[^/\\]+\.query\.service(?:\.ts)?$/.test(filePath);
+}
+
+/**
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+function isMixedServiceFilePath(filePath) {
+  const resolved = path.resolve(filePath);
+  if (!isPathInside(resolved, MODULES_ROOT)) {
+    return false;
+  }
+  const normalized = resolved.split(path.sep).join('/');
+  if (normalized.includes('/services/') || normalized.includes('/service/')) {
+    return true;
+  }
+  const fileName = path.basename(resolved);
+  return (
+    (fileName.endsWith('.service') || fileName.endsWith('.service.ts')) &&
+    !isQueryServiceFilePath(resolved)
+  );
+}
+
+/**
  * @param {import('estree').Node} node
  * @returns {string | null}
  */
@@ -893,6 +921,67 @@ const localArchitecturePlugin = {
         };
       },
     },
+    'no-queryservice-to-mixed-service-imports': {
+      meta: {
+        type: /** @type {const} */ ('problem'),
+        docs: {
+          description: 'disallow QueryService importing ordinary mixed read/write services',
+        },
+        schema: [],
+      },
+      /** @param {import('eslint').Rule.RuleContext} context */
+      create(context) {
+        if (!isPathInside(context.filename, MODULES_ROOT) || !isQueryServiceFilePath(context.filename)) {
+          return {};
+        }
+
+        /**
+         * @param {import('estree').Node} node
+         * @param {string} specifier
+         * @param {string} targetPath
+         * @returns {void}
+         */
+        function reportIfMixedService(node, specifier, targetPath) {
+          if (!isMixedServiceFilePath(targetPath)) {
+            return;
+          }
+          context.report({
+            node,
+            message:
+              'QueryService 禁止依赖普通 Service；请依赖同域 QueryService、只读 repository 或查询实现。当前 import: "{{specifier}}"',
+            data: { specifier },
+          });
+        }
+
+        /**
+         * @param {import('estree').Node & { source?: { value?: unknown } }} node
+         * @returns {void}
+         */
+        function reportStaticImportIfNeeded(node) {
+          checkStaticImportLikeNode(context, node, (specifier, targetPath) => {
+            reportIfMixedService(node, specifier, targetPath);
+          });
+        }
+
+        return {
+          ImportDeclaration: reportStaticImportIfNeeded,
+          ExportAllDeclaration: reportStaticImportIfNeeded,
+          ExportNamedDeclaration: reportStaticImportIfNeeded,
+          /** @param {import('estree').CallExpression} node */
+          CallExpression(node) {
+            checkRequireCallNode(context, node, (specifier, targetPath) => {
+              reportIfMixedService(node, specifier, targetPath);
+            });
+          },
+          /** @param {import('estree').ImportExpression} node */
+          ImportExpression(node) {
+            checkImportExpressionNode(context, node, (specifier, targetPath) => {
+              reportIfMixedService(node, specifier, targetPath);
+            });
+          },
+        };
+      },
+    },
     'no-cross-domain-usecases-imports': {
       meta: {
         type: /** @type {const} */ ('problem'),
@@ -1522,6 +1611,7 @@ export default defineConfig(
       'local-architecture/no-boundary-port-naming-drift': 'error',
       'local-architecture/no-graphql-decorators-outside-adapters': 'error',
       'local-architecture/no-graphql-schema-registration-outside-schema': 'error',
+      'local-architecture/no-queryservice-to-mixed-service-imports': 'error',
       'local-architecture/no-transaction-manager-alias': 'error',
       'local-architecture/no-usecase-transaction-manager-orm-api': 'error',
       '@typescript-eslint/no-explicit-any': 'error',

@@ -80,6 +80,12 @@ performs an automatic `--fix` pass.
   `@Query`, and `@Mutation` outside `src/adapters/api/graphql/**`.
   GraphQL protocol types must stay in the adapter layer and must not leak downward.
 
+- `local-architecture/no-queryservice-to-mixed-service-imports`
+  Blocks `*.query.service.ts` files under `src/modules/**` from importing ordinary
+  `*.service.ts` files or files under `services/` / `service/`.
+  QueryService may depend on same-domain QueryServices, read repositories, core, types, or
+  infrastructure query implementations, but not mixed read/write services.
+
 - `no-restricted-imports`
   Blocks direct `src/types/**`, `@src/types/**`, and `**/src/types/**` imports.
   Shared global types must use `@app-types/*`.
@@ -109,7 +115,6 @@ These rules are documented review rules in the current project unless and until 
 - Aggregate child-entity direct writes outside the aggregate root entry.
 - ORM Entity purity beyond adapter decorator/import checks, including accidental Entity output leaks
   from adapters, usecases, QueryServices, or module services.
-- QueryService depending on mixed read/write services.
 - Infrastructure runtime contract naming drift such as BullMQ payload files using layer boundary
   `*.contract.ts` naming.
 

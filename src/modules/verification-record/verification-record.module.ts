@@ -2,9 +2,9 @@ import { VerificationCodeHelper } from './verification-code.helper';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConsumableQueryService } from './queries/consumable.query.service';
+import { VerificationReadQueryService } from './queries/verification-read.query.service';
 import { VerificationRecordQueryService } from './queries/verification-record.query.service';
 import { VerificationRecordReadRepository } from './repositories/verification-record.read.repo';
-import { VerificationReadService } from './services/verification-read.service';
 import { VerificationRecordEntity } from './verification-record.entity';
 import { VerificationRecordService } from './verification-record.service';
 
@@ -17,7 +17,7 @@ import { VerificationRecordService } from './verification-record.service';
   providers: [
     VerificationRecordService,
     VerificationRecordReadRepository,
-    VerificationReadService,
+    VerificationReadQueryService,
     ConsumableQueryService,
     VerificationRecordQueryService,
     VerificationCodeHelper,
@@ -26,7 +26,6 @@ import { VerificationRecordService } from './verification-record.service';
     TypeOrmModule,
     VerificationRecordService,
     VerificationRecordReadRepository,
-    VerificationReadService,
     ConsumableQueryService,
     VerificationRecordQueryService,
     VerificationCodeHelper,
