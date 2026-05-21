@@ -14,6 +14,14 @@ const MODULES_ROOT = path.join(PROJECT_ROOT, 'src', 'modules');
 const TYPES_ROOT = path.join(PROJECT_ROOT, 'src', 'types');
 const USECASES_ROOT = path.join(PROJECT_ROOT, 'src', 'usecases');
 const SRC_ROOT = path.join(PROJECT_ROOT, 'src');
+const RESTRICTED_SRC_TYPES_IMPORT_PATTERNS = ['src/types/**', '@src/types/**', '**/src/types/**'];
+const MODULES_CONTRACTS_ELEMENT_PATTERNS = [
+  // Module-scope root contracts, e.g. src/modules/account/account.contract.ts.
+  'src/modules/*/*.contract.ts',
+  // Nested module-owned contracts, e.g. src/modules/common/email-dispatch/email-dispatch.contract.ts.
+  'src/modules/*/**/*.contract.ts',
+];
+// Keep this in sync with MODULES_CONTRACTS_ELEMENT_PATTERNS.
 const MODULE_BOUNDARY_CONTRACT_FILE_PATH_PATTERN = /(^|[/\\])[^/\\]+\.contract(?:\.ts)?$/;
 
 const TRANSACTION_MANAGER_ORM_METHODS = new Set([
@@ -492,7 +500,42 @@ export default defineConfig(
           pattern: 'src/adapters/api/integration-events',
           mode: 'folder',
         },
-        { type: 'usecases', pattern: 'src/usecases/**' },
+        {
+          type: 'usecases',
+          pattern: 'src/usecases/*/*.ts',
+          mode: 'file',
+          capture: ['usecaseScope'],
+        },
+        {
+          type: 'usecases',
+          pattern: 'src/usecases/*/**/*.ts',
+          mode: 'file',
+          capture: ['usecaseScope'],
+        },
+        {
+          type: 'modules-contracts',
+          pattern: MODULES_CONTRACTS_ELEMENT_PATTERNS[0],
+          mode: 'file',
+          capture: ['moduleScope'],
+        },
+        {
+          type: 'modules-contracts',
+          pattern: MODULES_CONTRACTS_ELEMENT_PATTERNS[1],
+          mode: 'file',
+          capture: ['moduleScope'],
+        },
+        {
+          type: 'modules-types',
+          pattern: 'src/modules/*/*.types.ts',
+          mode: 'file',
+          capture: ['moduleScope'],
+        },
+        {
+          type: 'modules-types',
+          pattern: 'src/modules/*/**/*.types.ts',
+          mode: 'file',
+          capture: ['moduleScope'],
+        },
         {
           type: 'modules-queries',
           pattern: 'src/modules/*/**/queries',
@@ -515,6 +558,24 @@ export default defineConfig(
           type: 'modules-services',
           pattern: 'src/modules/*/**/service',
           mode: 'folder',
+          capture: ['moduleScope'],
+        },
+        {
+          type: 'modules-internal',
+          pattern: 'src/modules/*',
+          mode: 'folder',
+          capture: ['moduleScope'],
+        },
+        {
+          type: 'modules-internal',
+          pattern: 'src/modules/*/*.ts',
+          mode: 'file',
+          capture: ['moduleScope'],
+        },
+        {
+          type: 'modules-internal',
+          pattern: 'src/modules/*/**/*.ts',
+          mode: 'file',
           capture: ['moduleScope'],
         },
         { type: 'infrastructure', pattern: 'src/infrastructure/**' },
@@ -541,6 +602,13 @@ export default defineConfig(
                 { to: { type: 'usecases' } },
                 { to: { type: 'core' } },
                 { to: { type: 'types' } },
+                {
+                  to: {
+                    type: 'modules-types',
+                    captured: { moduleScope: '{{from.adapterScope}}' },
+                  },
+                  dependency: { kind: 'type' },
+                },
               ],
             },
             {
@@ -576,9 +644,50 @@ export default defineConfig(
             {
               from: { type: 'usecases' },
               allow: [
-                { to: { type: 'usecases' } },
+                {
+                  to: {
+                    type: 'usecases',
+                    captured: { usecaseScope: '{{from.usecaseScope}}' },
+                  },
+                },
+                { to: { type: 'modules-contracts' } },
+                { to: { type: 'modules-types' } },
                 { to: { type: 'modules-queries' } },
                 { to: { type: 'modules-services' } },
+                { to: { type: 'core' } },
+                { to: { type: 'types' } },
+              ],
+            },
+            {
+              from: { type: 'modules-contracts' },
+              allow: [
+                {
+                  to: {
+                    type: 'modules-contracts',
+                    captured: { moduleScope: '{{from.moduleScope}}' },
+                  },
+                },
+                {
+                  to: {
+                    type: 'modules-types',
+                    captured: { moduleScope: '{{from.moduleScope}}' },
+                  },
+                },
+                { to: { type: 'modules-types', captured: { moduleScope: 'common' } } },
+                { to: { type: 'core' } },
+                { to: { type: 'types' } },
+              ],
+            },
+            {
+              from: { type: 'modules-types' },
+              allow: [
+                {
+                  to: {
+                    type: 'modules-types',
+                    captured: { moduleScope: '{{from.moduleScope}}' },
+                  },
+                },
+                { to: { type: 'modules-types', captured: { moduleScope: 'common' } } },
                 { to: { type: 'core' } },
                 { to: { type: 'types' } },
               ],
@@ -592,6 +701,30 @@ export default defineConfig(
                     captured: { moduleScope: '{{from.moduleScope}}' },
                   },
                 },
+                {
+                  to: {
+                    type: 'modules-types',
+                    captured: { moduleScope: '{{from.moduleScope}}' },
+                  },
+                },
+                {
+                  to: {
+                    type: 'modules-contracts',
+                    captured: { moduleScope: '{{from.moduleScope}}' },
+                  },
+                },
+                {
+                  to: {
+                    type: 'modules-internal',
+                    captured: { moduleScope: '{{from.moduleScope}}' },
+                  },
+                },
+                { to: { type: 'modules-services', captured: { moduleScope: 'common' } } },
+                { to: { type: 'modules-queries', captured: { moduleScope: 'common' } } },
+                { to: { type: 'modules-contracts', captured: { moduleScope: 'common' } } },
+                { to: { type: 'modules-types', captured: { moduleScope: 'common' } } },
+                { to: { type: 'modules-internal', captured: { moduleScope: 'common' } } },
+                { to: { type: 'infrastructure' } },
                 { to: { type: 'core' } },
                 { to: { type: 'types' } },
               ],
@@ -605,6 +738,72 @@ export default defineConfig(
                     captured: { moduleScope: '{{from.moduleScope}}' },
                   },
                 },
+                {
+                  to: {
+                    type: 'modules-types',
+                    captured: { moduleScope: '{{from.moduleScope}}' },
+                  },
+                },
+                {
+                  to: {
+                    type: 'modules-contracts',
+                    captured: { moduleScope: '{{from.moduleScope}}' },
+                  },
+                },
+                {
+                  to: {
+                    type: 'modules-internal',
+                    captured: { moduleScope: '{{from.moduleScope}}' },
+                  },
+                },
+                { to: { type: 'modules-services', captured: { moduleScope: 'common' } } },
+                { to: { type: 'modules-queries', captured: { moduleScope: 'common' } } },
+                { to: { type: 'modules-contracts', captured: { moduleScope: 'common' } } },
+                { to: { type: 'modules-types', captured: { moduleScope: 'common' } } },
+                { to: { type: 'modules-internal', captured: { moduleScope: 'common' } } },
+                { to: { type: 'infrastructure' } },
+                { to: { type: 'core' } },
+                { to: { type: 'types' } },
+              ],
+            },
+            {
+              from: { type: 'modules-internal' },
+              allow: [
+                {
+                  to: {
+                    type: 'modules-internal',
+                    captured: { moduleScope: '{{from.moduleScope}}' },
+                  },
+                },
+                {
+                  to: {
+                    type: 'modules-services',
+                    captured: { moduleScope: '{{from.moduleScope}}' },
+                  },
+                },
+                {
+                  to: {
+                    type: 'modules-queries',
+                    captured: { moduleScope: '{{from.moduleScope}}' },
+                  },
+                },
+                {
+                  to: {
+                    type: 'modules-types',
+                    captured: { moduleScope: '{{from.moduleScope}}' },
+                  },
+                },
+                {
+                  to: {
+                    type: 'modules-contracts',
+                    captured: { moduleScope: '{{from.moduleScope}}' },
+                  },
+                },
+                { to: { type: 'modules-services', captured: { moduleScope: 'common' } } },
+                { to: { type: 'modules-queries', captured: { moduleScope: 'common' } } },
+                { to: { type: 'modules-contracts', captured: { moduleScope: 'common' } } },
+                { to: { type: 'modules-types', captured: { moduleScope: 'common' } } },
+                { to: { type: 'modules-internal', captured: { moduleScope: 'common' } } },
                 { to: { type: 'infrastructure' } },
                 { to: { type: 'core' } },
                 { to: { type: 'types' } },
@@ -614,6 +813,7 @@ export default defineConfig(
               from: { type: 'infrastructure' },
               allow: [
                 { to: { type: 'infrastructure' } },
+                { to: { type: 'modules-contracts' } },
                 { to: { type: 'core' } },
                 { to: { type: 'types' } },
               ],
@@ -660,7 +860,7 @@ export default defineConfig(
       'no-restricted-imports': [
         'error',
         {
-          patterns: ['src/types/**', '@src/types/**', '**/src/types/**'],
+          patterns: RESTRICTED_SRC_TYPES_IMPORT_PATTERNS,
         },
       ],
       'prefer-const': 'error',
@@ -700,9 +900,7 @@ export default defineConfig(
             '@nestjs/*',
             'graphql',
             'typeorm',
-            'src/types/**',
-            '@src/types/**',
-            '**/src/types/**',
+            ...RESTRICTED_SRC_TYPES_IMPORT_PATTERNS,
           ],
         },
       ],

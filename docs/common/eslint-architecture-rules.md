@@ -25,12 +25,15 @@ performs an automatic `--fix` pass.
 ## Current Rule Map
 
 - `boundaries/dependencies`
-  Enforces the main layer dependency matrix currently modeled in `eslint.config.mjs`:
-  adapters -> usecases/core/types, usecases -> modules queries/services/core/types,
-  modules services -> infrastructure/core/types, modules queries -> same-domain queries/core/types,
-  infrastructure -> infrastructure/core/types, core -> core/types, types -> types.
-  This is still coarser than the target governance model; use the review rules below for uncovered
-  aggregate, entity, QueryService, boundary contract, and transaction details.
+  Enforces the main layer dependency matrix:
+  adapters -> usecases/core/types, usecases -> modules/core/types,
+  modules -> same-domain/common/core/types/infrastructure, infrastructure -> infrastructure/core/types,
+  core -> core/types, types -> types.
+  Module-owned `*.contract.ts` files are modeled separately so usecases/modules/infrastructure may
+  depend on the contract without allowing imports of module services or internals.
+  Module `*.types.ts` files are modeled separately so same-domain and common type contracts can be
+  shared without opening broader module internals.
+  Adapter files may `import type` same-domain module `*.types.ts` only.
 
 - `local-architecture/no-boundary-port-naming-drift`
   Blocks new `*.port.ts` / `*.ports.ts` boundary files and imports.
@@ -86,10 +89,8 @@ performs an automatic `--fix` pass.
 
 These rules are documented review rules in the current project unless and until matching lint rules are added:
 
-- Detailed module-owned `*.contract.ts` dependency modeling inside `boundaries/dependencies`.
 - Aggregate child-entity direct writes outside the aggregate root entry.
 - ORM Entity purity, including accidental GraphQL / HTTP / Swagger / adapter decorators.
-- Adapter type-only import exceptions for bounded-context root `*.types.ts`.
 - QueryService depending on mixed read/write services.
 - Infrastructure runtime contract naming drift such as BullMQ payload files using layer boundary
   `*.contract.ts` naming.

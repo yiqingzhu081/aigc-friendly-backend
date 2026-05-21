@@ -216,6 +216,9 @@ P0 决策闸口：
 
 - 阶段性 validation 已并入本计划摘要，临时文件已删除，避免继续引用过期状态。
 - `eslint.config.mjs` 已参考新项目 local architecture lint，迁入可安全落地的规则。
+- `boundaries/dependencies` 已按新项目拆分 `modules-contracts`、`modules-types`、
+  `modules-queries`、`modules-services`、`modules-internal`，不再停留在粗粒度 modules
+  分类。
 - `docs/common/eslint-architecture-rules.md` 已更新自动覆盖、legacy 白名单、补充扫描命令与人工
   review 边界。
 
@@ -388,6 +391,8 @@ P0 决策闸口：
 - 数据库表名单数化已作为最后治理尾项收口。
 - `eslint.config.mjs` 已补 `no-cross-domain-modules-imports`，防止业务域 modules 互相依赖或
   `modules/common` 反向依赖业务域。
+- `eslint.config.mjs` 已补齐新项目 modules boundary element matrix，`*.types.ts` 与未来
+  `*.contract.ts` 不再依赖人工判断。
 
 验收：
 
