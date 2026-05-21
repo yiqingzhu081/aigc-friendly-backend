@@ -99,7 +99,7 @@ export class UserInfoResolver {
       userState: view.userState,
       createdAt: view.createdAt,
       updatedAt: view.updatedAt,
-    } as UserInfoDTO;
+    };
   }
 
   /**
@@ -113,7 +113,7 @@ export class UserInfoResolver {
       gender: view.gender,
       avatarUrl: view.avatarUrl,
       phone: view.phone,
-    } as BasicUserInfoDTO;
+    };
   }
 
   private serializeGeographic(

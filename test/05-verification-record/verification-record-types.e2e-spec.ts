@@ -71,7 +71,7 @@ async function postGql<TData>(
   if (bearer) {
     httpRequest.set('Authorization', `Bearer ${bearer}`);
   }
-  return (await httpRequest) as request.Response & { body: GraphqlBody<TData> };
+  return await httpRequest;
 }
 
 async function getAccessToken(

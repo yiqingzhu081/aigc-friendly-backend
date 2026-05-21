@@ -50,7 +50,7 @@ const getPayloadValidator = <Q extends BullMqQueueName, J extends BullMqJobName<
   const validatorsByQueue = BULLMQ_JOB_PAYLOAD_VALIDATORS[input.queueName] as {
     readonly [K in BullMqJobName<Q>]: PayloadValidator<BullMqJobPayload<Q, K>>;
   };
-  return validatorsByQueue[input.jobName] as PayloadValidator<BullMqJobPayload<Q, J>>;
+  return validatorsByQueue[input.jobName];
 };
 
 export function assertBullMqJobPayload<

@@ -80,7 +80,7 @@ export class PaginationService {
     };
     this.applyOrderBy(qb, orderedSorts, columnResolver);
 
-    const finalParams: PaginationParams = { ...limited, sorts: orderedSorts } as PaginationParams;
+    const finalParams: PaginationParams = { ...limited, sorts: orderedSorts };
 
     // 构造游标选项（列与方向均由调用方给出）
     const cursorOptions = this.buildCursorOptions(

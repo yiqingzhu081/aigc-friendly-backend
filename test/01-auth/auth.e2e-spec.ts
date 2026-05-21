@@ -408,7 +408,7 @@ describe('Auth (e2e)', () => {
         activeUser.loginName,
         activeUser.loginPassword,
         LoginTypeEnum.PASSWORD,
-        'invalid-audience' as never,
+        'invalid-audience',
       );
 
       const { errors } = response.body;

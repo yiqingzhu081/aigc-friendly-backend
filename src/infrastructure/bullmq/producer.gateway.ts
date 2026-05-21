@@ -166,7 +166,7 @@ export class BullMqProducerGateway {
     return {
       ...(input.payload as Record<string, unknown>),
       traceId: input.traceId,
-    } as BullMqJobPayload<Q, J>;
+    };
   }
 
   private readTraceIdFromPayload(payload: unknown): string | undefined {

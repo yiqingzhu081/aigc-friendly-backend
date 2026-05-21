@@ -42,7 +42,7 @@ export function ensureTieBreaker(
   const primaryDir: SortDirection | undefined = sorts.find(
     (s) => s.field === cursorKey.primary,
   )?.direction;
-  const fallbackDir: SortDirection = (sorts[0]?.direction as SortDirection | undefined) ?? 'ASC';
+  const fallbackDir: SortDirection = sorts[0]?.direction ?? 'ASC';
   const direction: SortDirection = primaryDir ?? fallbackDir;
   return [...sorts, { field: cursorKey.tieBreaker, direction }];
 }

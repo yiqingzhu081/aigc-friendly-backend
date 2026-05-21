@@ -267,14 +267,7 @@ export class AccountQueryService {
       ? base.accessGroup
       : [IdentityTypeEnum.REGISTRANT];
 
-    return this.buildUserInfoView(base, accountId, finalAccessGroup) as UserInfoView & {
-      nickname: string;
-      userState: UserState;
-      notifyCount: number;
-      unreadCount: number;
-      createdAt: Date;
-      updatedAt: Date;
-    };
+    return this.buildUserInfoView(base, accountId, finalAccessGroup);
   }
 
   async getUserInfoViewForLogin(params: { accountId: number }): Promise<UserInfoView> {
