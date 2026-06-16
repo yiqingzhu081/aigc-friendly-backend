@@ -41,8 +41,8 @@ export class AccountEntity {
   loginPassword!: string;
 
   @Column({
-    type: 'enum',
-    enum: AccountStatus,
+    type: 'varchar',
+    length: 20,
     default: AccountStatus.PENDING,
     comment: '"ACTIVE=1"、"BANNED=2"、"DELETED=3"、"PENDING=4"、"SUSPENDED=5"、"INACTIVE=6"',
   })
@@ -69,7 +69,7 @@ export class AccountEntity {
 
   @CreateDateColumn({
     name: 'created_at',
-    type: 'timestamp',
+    type: 'datetime',
     precision: 3,
     default: () => 'CURRENT_TIMESTAMP(3)',
     comment: '创建时间（系统事件时间）',
@@ -78,7 +78,7 @@ export class AccountEntity {
 
   @UpdateDateColumn({
     name: 'updated_at',
-    type: 'timestamp',
+    type: 'datetime',
     precision: 3,
     default: () => 'CURRENT_TIMESTAMP(3)',
     onUpdate: 'CURRENT_TIMESTAMP(3)',

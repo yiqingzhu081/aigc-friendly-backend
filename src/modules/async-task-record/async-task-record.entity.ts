@@ -70,8 +70,8 @@ export class AsyncTaskRecordEntity {
   bizSubKey!: string | null;
 
   @Column({
-    type: 'enum',
-    enum: ASYNC_TASK_RECORD_SOURCES,
+    type: 'varchar',
+    length: 30,
     comment: '触发来源',
   })
   source!: AsyncTaskRecordSource;
@@ -86,7 +86,7 @@ export class AsyncTaskRecordEntity {
 
   @Column({
     name: 'occurred_at',
-    type: 'timestamp',
+    type: 'datetime',
     precision: 3,
     nullable: true,
     comment: '事件设定时间（系统事件时间）',
@@ -103,8 +103,8 @@ export class AsyncTaskRecordEntity {
   dedupKey!: string | null;
 
   @Column({
-    type: 'enum',
-    enum: ASYNC_TASK_RECORD_STATUSES,
+    type: 'varchar',
+    length: 20,
     comment: '任务状态',
   })
   status!: AsyncTaskRecordStatus;
@@ -123,7 +123,7 @@ export class AsyncTaskRecordEntity {
 
   @Column({
     name: 'enqueued_at',
-    type: 'timestamp',
+    type: 'datetime',
     precision: 3,
     comment: '入队时间（系统事件时间）',
   })
@@ -131,7 +131,7 @@ export class AsyncTaskRecordEntity {
 
   @Column({
     name: 'started_at',
-    type: 'timestamp',
+    type: 'datetime',
     precision: 3,
     nullable: true,
     comment: '开始执行时间（系统事件时间）',
@@ -140,7 +140,7 @@ export class AsyncTaskRecordEntity {
 
   @Column({
     name: 'finished_at',
-    type: 'timestamp',
+    type: 'datetime',
     precision: 3,
     nullable: true,
     comment: '完成时间（系统事件时间）',
@@ -149,7 +149,7 @@ export class AsyncTaskRecordEntity {
 
   @CreateDateColumn({
     name: 'created_at',
-    type: 'timestamp',
+    type: 'datetime',
     precision: 3,
     default: () => 'CURRENT_TIMESTAMP(3)',
     comment: '创建时间（系统事件时间）',
@@ -158,7 +158,7 @@ export class AsyncTaskRecordEntity {
 
   @UpdateDateColumn({
     name: 'updated_at',
-    type: 'timestamp',
+    type: 'datetime',
     precision: 3,
     default: () => 'CURRENT_TIMESTAMP(3)',
     onUpdate: 'CURRENT_TIMESTAMP(3)',

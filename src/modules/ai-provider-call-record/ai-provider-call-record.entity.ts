@@ -105,8 +105,8 @@ export class AiProviderCallRecordEntity {
 
   @Column({
     name: 'source',
-    type: 'enum',
-    enum: AI_PROVIDER_CALL_RECORD_SOURCES,
+    type: 'varchar',
+    length: 30,
     nullable: false,
     comment: '触发来源快照',
   })
@@ -150,8 +150,8 @@ export class AiProviderCallRecordEntity {
 
   @Column({
     name: 'provider_status',
-    type: 'enum',
-    enum: AI_PROVIDER_CALL_RECORD_PROVIDER_STATUSES,
+    type: 'varchar',
+    length: 20,
     nullable: false,
     comment: '本次 provider 调用结果状态',
   })
@@ -232,7 +232,7 @@ export class AiProviderCallRecordEntity {
 
   @Column({
     name: 'provider_started_at',
-    type: 'timestamp',
+    type: 'datetime',
     precision: 3,
     nullable: true,
     comment: '调用 AI 开始时间（系统事件时间）',
@@ -241,7 +241,7 @@ export class AiProviderCallRecordEntity {
 
   @Column({
     name: 'provider_finished_at',
-    type: 'timestamp',
+    type: 'datetime',
     precision: 3,
     nullable: true,
     comment: '调用 AI 结束时间（系统事件时间）',
@@ -259,7 +259,7 @@ export class AiProviderCallRecordEntity {
 
   @CreateDateColumn({
     name: 'created_at',
-    type: 'timestamp',
+    type: 'datetime',
     precision: 3,
     default: () => 'CURRENT_TIMESTAMP(3)',
     comment: '创建时间（系统事件时间）',
@@ -268,7 +268,7 @@ export class AiProviderCallRecordEntity {
 
   @UpdateDateColumn({
     name: 'updated_at',
-    type: 'timestamp',
+    type: 'datetime',
     precision: 3,
     default: () => 'CURRENT_TIMESTAMP(3)',
     onUpdate: 'CURRENT_TIMESTAMP(3)',

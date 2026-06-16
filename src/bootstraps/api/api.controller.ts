@@ -6,6 +6,21 @@ import { ApiService, type ApiHealthPayload, type ApiReadinessPayload } from './a
 export class ApiController {
   constructor(private readonly apiService: ApiService) {}
 
+  @Get()
+  getRoot(): Record<string, unknown> {
+    return {
+      status: 'ok',
+      service: 'aigc-friendly-backend',
+      message: '欢迎使用魔法道具工坊 API',
+      endpoints: {
+        health: '/health',
+        readiness: '/health/readiness',
+        graphql: '/graphql',
+      },
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   @Get('health')
   getHealth(): ApiHealthPayload {
     return this.apiService.getHealth();

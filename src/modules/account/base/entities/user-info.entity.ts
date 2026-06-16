@@ -32,8 +32,8 @@ export class UserInfoEntity {
   nickname!: string;
 
   @Column({
-    type: 'enum',
-    enum: Gender,
+    type: 'varchar',
+    length: 10,
     default: Gender.SECRET,
     comment: '性别',
   })
@@ -83,8 +83,8 @@ export class UserInfoEntity {
 
   @Column({
     name: 'user_state',
-    type: 'enum',
-    enum: UserState,
+    type: 'varchar',
+    length: 20,
     default: UserState.PENDING,
     comment: '账户统一状态：ACTIVE=可用，INACTIVE=停用，SUSPENDED=暂停，PENDING=待完善',
   })
@@ -92,7 +92,7 @@ export class UserInfoEntity {
 
   @CreateDateColumn({
     name: 'created_at',
-    type: 'timestamp',
+    type: 'datetime',
     precision: 3,
     default: () => 'CURRENT_TIMESTAMP(3)',
     comment: '创建时间（系统事件时间）',
@@ -101,7 +101,7 @@ export class UserInfoEntity {
 
   @UpdateDateColumn({
     name: 'updated_at',
-    type: 'timestamp',
+    type: 'datetime',
     precision: 3,
     default: () => 'CURRENT_TIMESTAMP(3)',
     onUpdate: 'CURRENT_TIMESTAMP(3)',

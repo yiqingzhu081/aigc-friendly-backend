@@ -23,8 +23,8 @@ export class ThirdPartyAuthEntity {
   accountId!: number;
 
   @Column({
-    type: 'enum',
-    enum: ThirdPartyProviderEnum,
+    type: 'varchar',
+    length: 20,
     comment: '第三方平台类型',
   })
   provider!: ThirdPartyProviderEnum;
@@ -57,7 +57,7 @@ export class ThirdPartyAuthEntity {
 
   @CreateDateColumn({
     name: 'created_at',
-    type: 'timestamp',
+    type: 'datetime',
     precision: 3,
     default: () => 'CURRENT_TIMESTAMP(3)',
     comment: '创建时间（系统事件时间）',
@@ -66,7 +66,7 @@ export class ThirdPartyAuthEntity {
 
   @UpdateDateColumn({
     name: 'updated_at',
-    type: 'timestamp',
+    type: 'datetime',
     precision: 3,
     default: () => 'CURRENT_TIMESTAMP(3)',
     onUpdate: 'CURRENT_TIMESTAMP(3)',

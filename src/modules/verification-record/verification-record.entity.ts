@@ -37,8 +37,8 @@ export class VerificationRecordEntity {
    * 枚举类型：通用验证/一次性动作；细分邮箱链接 vs 验证码
    */
   @Column({
-    type: 'enum',
-    enum: VerificationRecordType,
+    type: 'varchar',
+    length: 30,
     nullable: false,
     comment: '记录类型：通用验证/一次性动作；细分邮箱链接 vs 验证码',
   })
@@ -64,8 +64,8 @@ export class VerificationRecordEntity {
    * 状态机：一票一次，默认为 ACTIVE
    */
   @Column({
-    type: 'enum',
-    enum: VerificationRecordStatus,
+    type: 'varchar',
+    length: 20,
     nullable: false,
     default: VerificationRecordStatus.ACTIVE,
     comment: '状态机：一票一次',
@@ -115,8 +115,8 @@ export class VerificationRecordEntity {
    */
   @Column({
     name: 'subject_type',
-    type: 'enum',
-    enum: SubjectType,
+    type: 'varchar',
+    length: 20,
     nullable: true,
     comment: '主体类型',
   })
@@ -175,7 +175,7 @@ export class VerificationRecordEntity {
    */
   @Column({
     name: 'consumed_at',
-    type: 'timestamp',
+    type: 'datetime',
     precision: 3,
     nullable: true,
     comment: '消费时间（系统事件时间）',
@@ -188,7 +188,7 @@ export class VerificationRecordEntity {
    */
   @CreateDateColumn({
     name: 'created_at',
-    type: 'timestamp',
+    type: 'datetime',
     precision: 3,
     default: () => 'CURRENT_TIMESTAMP(3)',
     comment: '创建时间（系统事件时间）',
@@ -201,7 +201,7 @@ export class VerificationRecordEntity {
    */
   @UpdateDateColumn({
     name: 'updated_at',
-    type: 'timestamp',
+    type: 'datetime',
     precision: 3,
     default: () => 'CURRENT_TIMESTAMP(3)',
     onUpdate: 'CURRENT_TIMESTAMP(3)',
