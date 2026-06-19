@@ -12,6 +12,12 @@ import { UnpublishPostUsecase } from './unpublish-post.usecase';
 import { RestorePostUsecase } from './restore-post.usecase';
 import { IncrementPostViewUsecase } from './increment-post-view.usecase';
 import { ListDeletedPostsUsecase } from './list-deleted-posts.usecase';
+import { CreateCategoryUsecase } from './create-category.usecase';
+import { UpdateCategoryUsecase } from './update-category.usecase';
+import { DeleteCategoryUsecase } from './delete-category.usecase';
+import { GetCategoryUsecase } from './get-category.usecase';
+import { ListCategoriesUsecase } from './list-categories.usecase';
+import { GetCategoryTreeUsecase } from './get-category-tree.usecase';
 
 @Module({
   imports: [BlogModule, RedisModule],
@@ -27,6 +33,12 @@ import { ListDeletedPostsUsecase } from './list-deleted-posts.usecase';
     RestorePostUsecase,
     IncrementPostViewUsecase,
     ListDeletedPostsUsecase,
+    CreateCategoryUsecase,
+    UpdateCategoryUsecase,
+    DeleteCategoryUsecase,
+    GetCategoryUsecase,
+    ListCategoriesUsecase,
+    GetCategoryTreeUsecase,
   ],
   exports: [
     CreatePostUsecase,
@@ -40,6 +52,12 @@ import { ListDeletedPostsUsecase } from './list-deleted-posts.usecase';
     RestorePostUsecase,
     IncrementPostViewUsecase,
     ListDeletedPostsUsecase,
+    CreateCategoryUsecase,
+    UpdateCategoryUsecase,
+    DeleteCategoryUsecase,
+    GetCategoryUsecase,
+    ListCategoriesUsecase,
+    GetCategoryTreeUsecase,
   ],
 })
 export class BlogUsecasesModule {}

@@ -76,3 +76,42 @@ export interface PaginatedPostsResult {
   page: number;
   pageSize: number;
 }
+
+export interface CategoryView {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  parentId: string | null;
+  parentName: string | null;
+  sortOrder: number;
+  postCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CategoryTreeNode {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  sortOrder: number;
+  postCount: number;
+  children: CategoryTreeNode[];
+}
+
+export interface CreateCategoryInput {
+  name: string;
+  slug?: string;
+  description?: string;
+  parentId?: string | null;
+  sortOrder?: number;
+}
+
+export interface UpdateCategoryInput {
+  name?: string;
+  slug?: string;
+  description?: string;
+  parentId?: string | null;
+  sortOrder?: number;
+}
