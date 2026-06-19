@@ -1,4 +1,5 @@
 import type { PersistenceTransactionContext } from '@app-types/common/transaction.types';
+import { PostStatus } from '@app-types/models/blog.types';
 import { DomainError } from '@core/common/errors/domain-error';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -101,7 +102,7 @@ export class BlogQueryService {
 
     queryBuilder.orderBy('post.isTop', 'DESC');
     queryBuilder.addOrderBy(
-      input.status === 'DRAFT' ? 'post.updatedAt' : 'post.publishedAt',
+      input.status === PostStatus.DRAFT ? 'post.updatedAt' : 'post.publishedAt',
       'DESC',
     );
 
@@ -128,6 +129,45 @@ export class BlogQueryService {
     return post;
   }
 
+  async queryDeletedPosts(
+    params: { input: PostQueryInput },
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<PaginatedPostsResult> {
+    const { input } = params;
+    const postRepository = this.getPostRepository(transactionContext);
+
+    const page = input.page || 1;
+    const pageSize = input.pageSize || 10;
+    const skip = (page - 1) * pageSize;
+
+    const queryBuilder = postRepository
+      .createQueryBuilder('post')
+      .leftJoinAndSelect('post.category', 'category')
+      .leftJoinAndSelect('post.tags', 'tags')
+      .where('post.deletedAt IS NOT NULL')
+      .withDeleted();
+
+    if (input.keyword) {
+      queryBuilder.andWhere(
+        '(post.title LIKE :keyword OR post.excerpt LIKE :keyword OR post.content LIKE :keyword)',
+        { keyword: `%${input.keyword}%` },
+      );
+    }
+
+    queryBuilder.orderBy('post.deletedAt', 'DESC');
+
+    const [posts, total] = await queryBuilder.skip(skip).take(pageSize).getManyAndCount();
+
+    const items = posts.map((post) => this.toPostView(post));
+
+    return {
+      items,
+      total,
+      page,
+      pageSize,
+    };
+  }
+
   private toPostView(post: PostEntity): PostView {
     return {
       id: post.id,
@@ -136,7 +176,7 @@ export class BlogQueryService {
       excerpt: post.excerpt,
       content: post.content,
       contentHtml: post.contentHtml,
-      status: post.status as PostView['status'],
+      status: post.status,
       isTop: post.isTop,
       viewCount: post.viewCount,
       likeCount: post.likeCount,

@@ -122,7 +122,7 @@ export class BlogService {
 
     if (input.status !== undefined) {
       post.status = input.status;
-      if (input.status === 'PUBLISHED' && !post.publishedAt) {
+      if (input.status === PostStatus.PUBLISHED && !post.publishedAt) {
         post.publishedAt = new Date();
       }
     }
@@ -145,6 +145,109 @@ export class BlogService {
 
     await postRepository.softDelete(id);
     return true;
+  }
+
+  async restorePost(
+    params: { id: string },
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<PostSnapshot> {
+    const { id } = params;
+    const postRepository = this.getPostRepository(transactionContext);
+
+    const post = await postRepository
+      .createQueryBuilder('post')
+      .leftJoinAndSelect('post.category', 'category')
+      .leftJoinAndSelect('post.tags', 'tags')
+      .where('post.id = :id', { id })
+      .withDeleted()
+      .getOne();
+
+    if (!post) {
+      throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '文章不存在');
+    }
+
+    if (!post.deletedAt) {
+      throw new DomainError(BLOG_ERROR.POST_NOT_DELETED, '文章未被删除');
+    }
+
+    post.deletedAt = null;
+    const saved = await postRepository.save(post);
+    return this.toPostSnapshot(saved);
+  }
+
+  async togglePostTop(
+    params: { id: string },
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<PostSnapshot> {
+    const { id } = params;
+    const postRepository = this.getPostRepository(transactionContext);
+
+    const post = await postRepository.findOne({
+      where: { id },
+      relations: { category: true, tags: true },
+    });
+
+    if (!post) {
+      throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '文章不存在');
+    }
+
+    post.isTop = !post.isTop;
+    const saved = await postRepository.save(post);
+    return this.toPostSnapshot(saved);
+  }
+
+  async publishPost(
+    params: { id: string },
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<PostSnapshot> {
+    const { id } = params;
+    const postRepository = this.getPostRepository(transactionContext);
+
+    const post = await postRepository.findOne({
+      where: { id },
+      relations: { category: true, tags: true },
+    });
+
+    if (!post) {
+      throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '文章不存在');
+    }
+
+    if (post.status === PostStatus.PUBLISHED) {
+      throw new DomainError(BLOG_ERROR.POST_ALREADY_PUBLISHED, '文章已发布');
+    }
+
+    post.status = PostStatus.PUBLISHED;
+    if (!post.publishedAt) {
+      post.publishedAt = new Date();
+    }
+
+    const saved = await postRepository.save(post);
+    return this.toPostSnapshot(saved);
+  }
+
+  async unpublishPost(
+    params: { id: string },
+    transactionContext?: PersistenceTransactionContext,
+  ): Promise<PostSnapshot> {
+    const { id } = params;
+    const postRepository = this.getPostRepository(transactionContext);
+
+    const post = await postRepository.findOne({
+      where: { id },
+      relations: { category: true, tags: true },
+    });
+
+    if (!post) {
+      throw new DomainError(BLOG_ERROR.POST_NOT_FOUND, '文章不存在');
+    }
+
+    if (post.status !== PostStatus.PUBLISHED) {
+      throw new DomainError(BLOG_ERROR.POST_NOT_PUBLISHED, '文章未发布');
+    }
+
+    post.status = PostStatus.ARCHIVED;
+    const saved = await postRepository.save(post);
+    return this.toPostSnapshot(saved);
   }
 
   async incrementViewCount(
